@@ -1,0 +1,3 @@
+export function calculateSaleTotal(lines: { quantity:number; unitPrice:number }[]) { if (!lines.length) throw new Error('Sale must contain at least one line'); return lines.reduce((sum, line) => { if (line.quantity <= 0 || line.unitPrice < 0) throw new Error('Invalid line'); return sum + line.quantity * line.unitPrice; }, 0); }
+export function calculatePayrollAmount(payType:'monthly'|'daily'|'weekly', quantity:number, rate:number) { if (quantity <= 0 || rate < 0) throw new Error('Invalid payroll input'); return payType === 'monthly' ? rate : quantity * rate; }
+export function remainingBalance(total:number, paid:number) { if (paid < 0 || total < 0 || paid > total) throw new Error('Invalid payment'); return total - paid; }
