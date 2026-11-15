@@ -1,0 +1,2 @@
+'use server'; import {redirect} from 'next/navigation'; import {db} from '@/lib/supabase/server';
+export async function saveProduction(formData:FormData){const c=await db(); const {error}=await c.rpc('record_output',{p_output_product_id:String(formData.get('output')),p_output_quantity:Number(formData.get('output_quantity')),p_notes:String(formData.get('notes')||'')}); if(error) throw new Error(error.message); redirect('/app/production');}

@@ -1,2 +1,39 @@
-import { createClient } from '@/lib/supabase/server'; import { PageHeader } from '@/components/page-header'; import { getDictionary } from '@/lib/i18n';
-export default async function Sales(){const t=getDictionary('am'); const db=await createClient(); const {data}=await db.from('sales').select('*').order('sale_date',{ascending:false}).limit(100); return <><PageHeader title={t.salesTitle} subtitle="እቃዎችን እና አገልግሎቶችን በአንድ ደረሰኝ ይሽጡ" action={<a className="btn-primary" href="/app/sales/new">+ Record sale</a>}/><div className="card overflow-x-auto"><table className="w-full text-left text-sm"><thead><tr className="border-b text-xs uppercase text-slate-500"><th className="px-3 py-3">Invoice</th><th>Date</th><th>Customer</th><th>Total</th><th>Paid</th><th>Status</th></tr></thead><tbody>{data?.map(s=><tr className="border-b last:border-0" key={s.id}><td className="px-3 py-4 font-medium">{s.invoice_number}</td><td>{s.sale_date}</td><td>{s.customer_name??'—'}</td><td>ETB {Number(s.total_amount).toLocaleString()}</td><td>ETB {Number(s.paid_amount).toLocaleString()}</td><td className="capitalize">{s.status}</td></tr>)}</tbody></table>{!data?.length&&<p className="p-6 text-sm text-slate-500">{t.noData}</p>}</div></>}
+import { db } from '@/lib/supabase/server';
+import SalesDesk from './sales-desk';
+
+export default async function SalesPage() {
+  const c = await db();
+
+  const [
+    { data: products },
+    { data: productSales },
+    { data: servicePayments },
+  ] = await Promise.all([
+    c
+      .from('products')
+      .select('id,name,unit,selling_price,stock_on_hand,category,is_stock_tracked')
+      .eq('is_active', true)
+      .not('category', 'in', '(service,cement)')
+      .order('name'),
+    c
+      .from('sales')
+      .select(
+        'id,invoice_number,sale_date,customer_name,total_amount,paid_amount,payment_method,created_at,notes,recorded_by,profiles:recorded_by(display_name),sale_lines(product_id,item_name_snapshot,unit_snapshot,quantity,unit_price,line_total)'
+      )
+      .order('created_at', { ascending: false })
+      .limit(50),
+    c
+      .from('service_payments')
+      .select('id,service_type,customer_name,amount,created_at,notes')
+      .order('created_at', { ascending: false })
+      .limit(50),
+  ]);
+
+  return (
+    <SalesDesk
+      products={products ?? []}
+      productSales={productSales ?? []}
+      servicePayments={servicePayments ?? []}
+    />
+  );
+}

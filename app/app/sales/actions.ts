@@ -1,4 +1,9 @@
-'use server';
-import { z } from 'zod'; import { redirect } from 'next/navigation'; import { createClient } from '@/lib/supabase/server';
-const schema=z.object({product_id:z.string().uuid(),quantity:z.coerce.number().positive(),paid_amount:z.coerce.number().nonnegative(),payment_method:z.enum(['cash','bank_transfer','mobile','other']),sale_date:z.string(),customer_name:z.string().optional(),notes:z.string().optional()});
-export async function createSale(formData:FormData){const p=schema.safeParse(Object.fromEntries(formData)); if(!p.success) throw new Error('Invalid sale input'); const db=await createClient(); const {data,error}=await db.rpc('create_sale',{p_customer_name:p.data.customer_name||null,p_sale_date:p.data.sale_date,p_notes:p.data.notes||null,p_paid_amount:p.data.paid_amount,p_payment_method:p.data.payment_method,p_lines:[{product_id:p.data.product_id,quantity:p.data.quantity}]}); if(error||!data) throw new Error(error?.message||'Unable to create sale'); redirect(`/app/sales/${data}`);}
+'use server'; import {redirect} from 'next/navigation'; import {db} from '@/lib/supabase/server';
+export async function recordService(formData:FormData){const c=await db(); const {error}=await c.rpc('record_service_payment',{p_service_type:String(formData.get('service_type')),p_customer_name:String(formData.get('customer_name')||''),p_amount:Number(formData.get('amount')),p_notes:String(formData.get('notes')||'')}); if(error) throw new Error(error.message); redirect('/app/sales');}
+export type ProductSaleState = { error: string };
+export async function recordProductSale(_previousState: ProductSaleState, formData: FormData): Promise<ProductSaleState> {
+  const c=await db(); const saleDate=String(formData.get('sale_date')||'');
+  const {error}=await c.rpc('record_product_sale',{p_product_id:String(formData.get('product_id')),p_quantity:Number(formData.get('quantity')),p_customer_name:String(formData.get('customer_name')||''),p_payment_method:String(formData.get('payment_method')||'cash'),p_sale_date:saleDate||null,p_notes:String(formData.get('notes')||'')});
+  if(error) return {error: error.message.toLowerCase().includes('insufficient stock') ? 'Not enough stock to complete this sale. Refresh the page to see the latest quantity, then reduce the sale quantity or record new production/stock.' : error.message};
+  redirect('/app/sales');
+}
