@@ -7,21 +7,21 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     data: { user },
   } = await client.auth.getUser();
 
-  let isSuperAdmin =
-    user?.app_metadata?.role === 'super_admin' ||
-    user?.user_metadata?.role === 'super_admin';
+  const { data: profile } = user
+    ? await client.from('profiles').select('display_name,role').eq('id', user.id).maybeSingle()
+    : { data: null };
 
-  if (!isSuperAdmin && user) {
-    const { data: profile } = await client
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .maybeSingle();
-    isSuperAdmin = profile?.role === 'super_admin';
-  }
+  const isSuperAdmin =
+    user?.app_metadata?.role === 'super_admin' ||
+    user?.user_metadata?.role === 'super_admin' ||
+    profile?.role === 'super_admin';
 
   return (
-    <AppShell userEmail={user?.email || ''} isSuperAdmin={Boolean(isSuperAdmin)}>
+    <AppShell
+      userEmail={user?.email || ''}
+      displayName={profile?.display_name && profile.display_name !== user?.email ? profile.display_name : user?.user_metadata?.display_name || user?.email?.split('@')[0] || ''}
+      isSuperAdmin={Boolean(isSuperAdmin)}
+    >
       {children}
     </AppShell>
   );

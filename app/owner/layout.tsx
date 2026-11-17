@@ -38,7 +38,7 @@ export default async function OwnerLayout({ children }: { children: React.ReactN
   return (
     <OwnerShell
       userEmail={user.email || ''}
-      displayName={profile?.display_name || user.email || 'Super Admin'}
+      displayName={profile?.display_name && profile.display_name !== user.email ? profile.display_name : user.user_metadata?.display_name || user.email?.split('@')[0] || 'Super Admin'}
     >
       {children}
     </OwnerShell>

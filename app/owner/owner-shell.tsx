@@ -16,6 +16,7 @@ import {
   LogOut,
   ClipboardPenLine,
   Users,
+  UserRound,
 } from 'lucide-react';
 import { logout } from '@/app/login/actions';
 
@@ -40,7 +41,7 @@ interface OwnerShellProps {
   displayName?: string;
 }
 
-export default function OwnerShell({ children, userEmail }: OwnerShellProps) {
+export default function OwnerShell({ children, userEmail, displayName }: OwnerShellProps) {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -155,11 +156,16 @@ export default function OwnerShell({ children, userEmail }: OwnerShellProps) {
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                 <span>ዋና አስተዳዳሪ</span>
               </div>
-              <p className="text-[11px] text-slate-300 font-mono truncate mt-0.5" title={userEmail}>
-                {userEmail}
+              <p className="text-sm text-slate-200 font-semibold truncate mt-0.5" title={displayName || userEmail}>
+                {displayName || userEmail?.split('@')[0]}
               </p>
             </div>
           )}
+
+          <Link href="/owner/profile" className={`flex items-center rounded-lg text-slate-300 hover:bg-slate-900/60 hover:text-white transition-colors ${isCollapsed ? 'mx-auto h-11 w-11 justify-center' : 'min-h-11 gap-2.5 px-3'}`} title="የእኔ መገለጫ">
+            <UserRound className="h-4 w-4 text-blue-300" />
+            {!isCollapsed && <span className="truncate text-sm font-semibold">መገለጫ</span>}
+          </Link>
 
           <div className="flex items-center justify-between gap-1">
             <Link
@@ -261,9 +267,13 @@ export default function OwnerShell({ children, userEmail }: OwnerShellProps) {
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                 <span>ዋና አስተዳዳሪ</span>
               </div>
-              <p className="text-xs text-slate-300 font-mono truncate mt-0.5">{userEmail}</p>
+              <p className="text-sm text-slate-200 font-semibold truncate mt-0.5">{displayName || userEmail?.split('@')[0]}</p>
             </div>
           )}
+
+          <Link href="/owner/profile" onClick={() => setIsMobileOpen(false)} className="flex min-h-11 items-center gap-2.5 rounded-lg px-3 text-sm font-semibold text-slate-200 hover:bg-slate-900 transition-colors">
+            <UserRound className="h-4 w-4 text-blue-300" /><span>መገለጫ</span>
+          </Link>
 
           <div className="flex items-center justify-between gap-2">
             <Link

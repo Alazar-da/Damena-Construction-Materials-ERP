@@ -35,6 +35,7 @@ interface ProductSale {
   created_at: string;
   notes: string | null;
   recorded_by: string;
+  profiles: { display_name: string | null } | { display_name: string | null }[] | null;
   sale_lines?: SaleLine[];
 }
 
@@ -408,7 +409,7 @@ export default function SalesDesk({
             <table className="w-full text-left text-xs sm:text-sm">
               <thead className="bg-slate-50 text-[11px] font-bold uppercase text-slate-500 border-b border-slate-200">
                 <tr>
-                  <th className="py-2.5 px-4">እቃ</th><th className="py-2.5 px-4">ብዛት</th><th className="py-2.5 px-4">ድምር (ብር)</th><th className="py-2.5 px-4">ደንበኛ</th><th className="py-2.5 px-4">ክፍያ</th><th className="py-2.5 px-4">ቀን</th>
+                  <th className="py-2.5 px-4">እቃ</th><th className="py-2.5 px-4">ብዛት</th><th className="py-2.5 px-4">ድምር (ብር)</th><th className="py-2.5 px-4">ደንበኛ</th><th className="py-2.5 px-4">ክፍያ</th><th className="py-2.5 px-4">ቀን</th><th className="py-2.5 px-4">የመዘገበው</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -428,6 +429,7 @@ export default function SalesDesk({
                       <td className="py-3 px-4 text-slate-700">{x.customer_name || 'በቀጥታ ሽያጭ'}</td>
                       <td className="py-3 px-4 text-slate-700">{x.payment_method === 'cash' ? 'ጥሬ ገንዘብ' : x.payment_method === 'bank' ? 'የባንክ ዝውውር' : 'በዱቤ'}</td>
                       <td className="py-3 px-4 text-slate-500 font-mono text-xs">{x.sale_date}</td>
+                      <td className="py-3 px-4 text-slate-700 font-semibold">{(Array.isArray(x.profiles) ? x.profiles[0] : x.profiles)?.display_name || 'ያልታወቀ ተጠቃሚ'}</td>
                     </tr>
                   );
                 })}

@@ -21,12 +21,19 @@ type Sale = {
   total_amount: number;
   paid_amount: number;
   status: string;
+  recorded_by: string | null;
+  profiles: { display_name: string | null } | { display_name: string | null }[] | null;
   sale_lines?: {
     item_name_snapshot: string;
     quantity: number;
     unit_snapshot: string;
     unit_price: number;
   }[];
+};
+
+const recordedBy = (value: Sale['profiles']) => {
+  const profile = Array.isArray(value) ? value[0] : value;
+  return profile?.display_name || 'ያልታወቀ ተጠቃሚ';
 };
 
 type Service = {
@@ -528,9 +535,9 @@ export default function ReportsView({
                     <div className="flex items-center justify-between text-xs">
                       <div>
                         <p className="font-medium text-slate-700">
-                          {itemQty ? `${itemQty} · ` : ''}{s.customer_name || 'Walk-in'}
+                          {itemQty ? `${itemQty} · ` : ''}{s.customer_name || 'በቀጥታ ሽያጭ'}
                         </p>
-                        <p className="text-[11px] text-slate-400 font-mono mt-0.5">{s.sale_date}</p>
+                        <p className="text-[11px] text-slate-400 mt-0.5">{s.sale_date} · በ{recordedBy(s.profiles)} ተመዝግቧል</p>
                       </div>
                       <div className="text-right font-mono">
                         <span className="font-bold text-slate-900 text-sm">
@@ -571,7 +578,7 @@ export default function ReportsView({
                           <span className="text-[11px] text-slate-400 font-mono">{s.sale_date}</span>
                         </td>
                         <td className="py-2.5 px-4 font-mono text-xs">{itemQty}</td>
-                        <td className="py-2.5 px-4 text-slate-800">{s.customer_name || 'Walk-in'}</td>
+                        <td className="py-2.5 px-4 text-slate-800">{s.customer_name || 'በቀጥታ ሽያጭ'}<span className="mt-1 block text-xs text-slate-500">በ{recordedBy(s.profiles)} ተመዝግቧል</span></td>
                         <td className="py-2.5 px-4 font-mono font-bold text-slate-900">
                           {money(Number(s.total_amount))}
                         </td>

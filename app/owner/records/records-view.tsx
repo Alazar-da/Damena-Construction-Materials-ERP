@@ -41,6 +41,7 @@ type Sale = {
   notes: string | null;
   created_at: string;
   recorded_by: string | null;
+  profiles: { display_name: string | null } | { display_name: string | null }[] | null;
   sale_lines: SaleLine[];
 };
 
@@ -94,6 +95,11 @@ const money = (value: number) =>
 
 const relation = (value: Production['products']) =>
   Array.isArray(value) ? value[0] : value;
+
+const recordedBy = (value: Sale['profiles']) => {
+  const profile = Array.isArray(value) ? value[0] : value;
+  return profile?.display_name || 'ያልታወቀ ተጠቃሚ';
+};
 
 const categories: [Category, string, React.ComponentType<{ className?: string }>][] = [
   ['sales', 'ሽያጭ', Receipt],
@@ -316,7 +322,7 @@ export default function OwnerRecords({
                 key={s.id}
                 type="ሽያጭ"
                 title={itemName}
-                subtitle={`${itemQty ? `${itemQty} · ` : ''}${s.sale_date} · ${s.customer_name || 'Walk-in'}`}
+                subtitle={`${itemQty ? `${itemQty} · ` : ''}${s.sale_date} · ${s.customer_name || 'በቀጥታ ሽያጭ'} · በ${recordedBy(s.profiles)} ተመዝግቧል`}
                 amount={money(Number(s.total_amount))}
                 statusBadge={
                   <span

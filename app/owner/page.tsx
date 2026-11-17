@@ -24,15 +24,46 @@ const localizeProductName = (name: string) =>
 
 export const dynamic = 'force-dynamic';
 
-export default async function OwnerPortal() {
+type OverviewPeriod = 'daily' | 'weekly' | 'monthly';
+
+const addDays = (date: string, days: number) => {
+  const value = new Date(`${date}T00:00:00Z`);
+  value.setUTCDate(value.getUTCDate() + days);
+  return value.toISOString().slice(0, 10);
+};
+
+export default async function OwnerPortal({
+  searchParams,
+}: {
+  searchParams: Promise<{ period?: string }>;
+}) {
+  const params = await searchParams;
+  const period: OverviewPeriod = ['daily', 'weekly', 'monthly'].includes(params.period || '')
+    ? (params.period as OverviewPeriod)
+    : 'monthly';
   const client = await db();
   const today = todayInNairobi();
   const month = today.slice(0, 7);
-  const monthLabel = new Intl.DateTimeFormat('am-ET', {
-    timeZone: 'Africa/Nairobi',
-    month: 'long',
-    year: 'numeric',
-  }).format(new Date(`${today}T12:00:00+03:00`));
+  const weekday = new Date(`${today}T00:00:00Z`).getUTCDay();
+  const startDate = period === 'daily'
+    ? today
+    : period === 'weekly'
+    ? addDays(today, -((weekday + 6) % 7))
+    : `${month}-01`;
+  const endDate = today;
+  const nextDate = addDays(endDate, 1);
+  const periodName = period === 'daily' ? 'የዛሬ' : period === 'weekly' ? 'የዚህ ሳምንት' : 'የዚህ ወር';
+  const periodLabel = period === 'daily'
+    ? new Intl.DateTimeFormat('am-ET', {
+        timeZone: 'Africa/Nairobi', weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
+      }).format(new Date(`${today}T12:00:00+03:00`))
+    : period === 'monthly'
+    ? new Intl.DateTimeFormat('am-ET', {
+        timeZone: 'Africa/Nairobi',
+        month: 'long',
+        year: 'numeric',
+      }).format(new Date(`${today}T12:00:00+03:00`))
+    : `${new Intl.DateTimeFormat('am-ET', { timeZone: 'Africa/Nairobi', month: 'short', day: 'numeric' }).format(new Date(`${startDate}T12:00:00+03:00`))} – ${new Intl.DateTimeFormat('am-ET', { timeZone: 'Africa/Nairobi', month: 'short', day: 'numeric' }).format(new Date(`${endDate}T12:00:00+03:00`))}`;
 
   const [
     { data: products },
@@ -48,37 +79,38 @@ export default async function OwnerPortal() {
       .order('name'),
     client
       .from('sales')
-      .select('id,invoice_number,customer_name,total_amount,sale_date,created_at,status,sale_lines(item_name_snapshot,quantity,unit_snapshot)')
-      .gte('sale_date', `${month}-01`)
-      .lte('sale_date', today)
+      .select('id,invoice_number,customer_name,total_amount,sale_date,created_at,status,recorded_by,profiles:recorded_by(display_name),sale_lines(item_name_snapshot,quantity,unit_snapshot)')
+      .gte('sale_date', startDate)
+      .lte('sale_date', endDate)
       .neq('status', 'void')
       .order('created_at', { ascending: false })
       .limit(100),
     client
       .from('service_payments')
       .select('id,service_type,customer_name,amount,created_at')
-      .gte('created_at', `${month}-01T00:00:00+03:00`)
-      .lte('created_at', `${today}T23:59:59+03:00`)
+      .gte('created_at', `${startDate}T00:00:00+03:00`)
+      .lt('created_at', `${nextDate}T00:00:00+03:00`)
       .order('created_at', { ascending: false })
       .limit(100),
     client
       .from('payroll_records')
       .select('id,worker_name,pay_type,period_start,amount,paid_at,status')
       .eq('status', 'paid')
-      .gte('period_start', `${month}-01`)
-      .lte('period_start', today)
+      .gte('period_start', startDate)
+      .lte('period_start', endDate)
       .order('paid_at', { ascending: false })
       .limit(100),
     client
       .from('production_runs')
       .select('id,production_date,output_quantity')
-      .gte('production_date', `${month}-01`)
-      .lte('production_date', today),
+      .gte('production_date', startDate)
+      .lte('production_date', endDate),
   ]);
 
   const rows = [
     ...(sales ?? []).map((row) => {
       const line = row.sale_lines?.[0];
+      const actor = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
       const name = localizeProductName(line?.item_name_snapshot || 'የምርት ሽያጭ');
       const unit = line?.unit_snapshot === 'piece' ? 'ክፍል' : line?.unit_snapshot || 'ክፍል';
       const qty = line ? `${line.quantity} ${unit} · ` : '';
@@ -86,7 +118,7 @@ export default async function OwnerPortal() {
         id: `sale-${row.id}`,
         type: 'ሽያጭ',
         name,
-        detail: `${qty}${row.customer_name || 'በቀጥታ ሽያጭ'}`,
+        detail: `${qty}${row.customer_name || 'በቀጥታ ሽያጭ'} · በ${actor?.display_name || 'ያልታወቀ ተጠቃሚ'} ተመዝግቧል`,
         amount: Number(row.total_amount),
         date: row.created_at,
       };
@@ -134,12 +166,28 @@ export default async function OwnerPortal() {
         <div>
           <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-sm font-semibold text-blue-900">
             <CalendarDays className="h-4 w-4" aria-hidden="true" />
-            {monthLabel}
+            {periodLabel}
           </div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
             የንግድ አጠቃላይ እይታ
           </h1>
-          <p className="mt-2 text-base text-slate-600">የዚህ ወር ገቢ፣ ወጪ እና የእቃ ክምችት ማጠቃለያ</p>
+          <p className="mt-2 text-base text-slate-600">{periodName} ገቢ፣ ወጪ እና የምርት ማጠቃለያ</p>
+          <nav aria-label="የማጠቃለያ ጊዜ ይምረጡ" className="mt-5 inline-flex flex-wrap gap-2 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm">
+            {([
+              { id: 'daily', label: 'ዕለታዊ' },
+              { id: 'weekly', label: 'ሳምንታዊ' },
+              { id: 'monthly', label: 'ወርሃዊ' },
+            ] as const).map((item) => (
+              <Link
+                key={item.id}
+                href={`/owner?period=${item.id}`}
+                aria-current={period === item.id ? 'page' : undefined}
+                className={`inline-flex min-h-11 items-center justify-center rounded-xl px-4 text-sm font-bold transition-colors ${period === item.id ? 'bg-[#111827] text-white shadow-sm' : 'text-slate-700 hover:bg-blue-50 hover:text-blue-900'}`}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
         </div>
         <div className="flex flex-wrap gap-3">
           <Link href="/owner/reports" className="erp-btn-secondary min-h-12 gap-2 px-5 text-base">
@@ -153,7 +201,7 @@ export default async function OwnerPortal() {
         </div>
       </header>
 
-      <section aria-label="የወሩ የገንዘብ ማጠቃለያ" className="owner-finance-hero relative overflow-hidden rounded-[2rem] bg-[#111827] p-6 text-white shadow-xl shadow-slate-900/10 sm:p-8 lg:p-10">
+      <section aria-label={`${periodName} የገንዘብ ማጠቃለያ`} className="owner-finance-hero relative overflow-hidden rounded-[2rem] bg-[#111827] p-6 text-white shadow-xl shadow-slate-900/10 sm:p-8 lg:p-10">
         <div aria-hidden="true" className="pointer-events-none absolute -right-20 -top-36 h-96 w-96 rounded-full border-[48px] border-blue-400/10" />
         <div aria-hidden="true" className="pointer-events-none absolute -right-2 top-0 h-full w-1/3 bg-gradient-to-l from-blue-500/15 to-transparent" />
         <div className="relative grid gap-8 lg:grid-cols-[1.1fr_1fr] lg:items-center">
@@ -170,17 +218,17 @@ export default async function OwnerPortal() {
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div className="rounded-2xl border border-white/10 bg-white/[0.07] p-4">
               <ArrowUpRight className="mb-4 h-5 w-5 text-sky-300" aria-hidden="true" />
-              <p className="text-sm font-medium text-slate-300">የምርት ሽያጭ</p>
+                <p className="text-sm font-medium text-slate-300">{periodName} የምርት ሽያጭ</p>
               <p className="mt-2 text-xl font-bold">{money(totals.sales)}</p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-white/[0.07] p-4">
               <Activity className="mb-4 h-5 w-5 text-blue-300" aria-hidden="true" />
-              <p className="text-sm font-medium text-slate-300">የአገልግሎት ገቢ</p>
+                <p className="text-sm font-medium text-slate-300">{periodName} የአገልግሎት ገቢ</p>
               <p className="mt-2 text-xl font-bold">{money(totals.services)}</p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-white/[0.07] p-4">
               <WalletCards className="mb-4 h-5 w-5 text-amber-300" aria-hidden="true" />
-              <p className="text-sm font-medium text-slate-300">የተከፈለ ደመወዝ</p>
+                <p className="text-sm font-medium text-slate-300">{periodName} የተከፈለ ደመወዝ</p>
               <p className="mt-2 text-xl font-bold">{money(totals.payroll)}</p>
             </div>
           </div>
@@ -196,7 +244,7 @@ export default async function OwnerPortal() {
               </span>
               <div>
                 <h2 className="text-xl font-bold text-slate-950">የቅርብ ጊዜ እንቅስቃሴ</h2>
-                <p className="mt-1 text-sm text-slate-600">የዚህ ወር ገቢና ወጪ</p>
+                <p className="mt-1 text-sm text-slate-600">{periodName} ገቢና ወጪ</p>
               </div>
             </div>
             <Link href="/owner/records" className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-base font-semibold text-blue-800 hover:bg-blue-50">
@@ -253,7 +301,7 @@ export default async function OwnerPortal() {
             </div>
             <div className="mt-6 grid grid-cols-2 gap-3 border-t border-slate-200 pt-5">
               <div>
-                <p className="text-sm text-slate-600">በዚህ ወር የተመረተ</p>
+                <p className="text-sm text-slate-600">{periodName} የተመረተ</p>
                 <p className="mt-1 text-xl font-bold text-slate-950">{totals.output.toLocaleString('en-US')}</p>
               </div>
               <div>

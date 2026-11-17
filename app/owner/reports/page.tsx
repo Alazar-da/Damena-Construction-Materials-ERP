@@ -57,7 +57,7 @@ export default async function OwnerReportsPage({
     client
       .from('sales')
       .select(
-        'id,invoice_number,sale_date,customer_name,total_amount,paid_amount,status,sale_lines(item_name_snapshot,quantity,unit_snapshot,unit_price)'
+        'id,invoice_number,sale_date,customer_name,total_amount,paid_amount,status,recorded_by,profiles:recorded_by(display_name),sale_lines(item_name_snapshot,quantity,unit_snapshot,unit_price)'
       )
       .gte('sale_date', from)
       .lte('sale_date', to)
