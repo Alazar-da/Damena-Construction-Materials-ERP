@@ -1,11 +1,26 @@
 import Link from 'next/link';
 import { db } from '@/lib/supabase/server';
-import { ArrowRight, Tag } from 'lucide-react';
+import {
+  Activity,
+  AlertTriangle,
+  ArrowDownRight,
+  ArrowRight,
+  ArrowUpRight,
+  Boxes,
+  CalendarDays,
+  ChartNoAxesCombined,
+  CircleDollarSign,
+  Factory,
+  Tag,
+  WalletCards,
+} from 'lucide-react';
 
 const todayInNairobi = () =>
   new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Nairobi' }).format(new Date());
 const money = (n: number) =>
-  `ETB ${Number(n || 0).toLocaleString('en-KE', { maximumFractionDigits: 2 })}`;
+  `${Number(n || 0).toLocaleString('en-KE', { maximumFractionDigits: 2 })} ብር`;
+const localizeProductName = (name: string) =>
+  name.replace(/(\d+\s*\/\s*\d+)\s*Block/i, '$1 ብሎክ').replace(/Terrace/i, 'ቴራሶ');
 
 export const dynamic = 'force-dynamic';
 
@@ -13,6 +28,11 @@ export default async function OwnerPortal() {
   const client = await db();
   const today = todayInNairobi();
   const month = today.slice(0, 7);
+  const monthLabel = new Intl.DateTimeFormat('am-ET', {
+    timeZone: 'Africa/Nairobi',
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date(`${today}T12:00:00+03:00`));
 
   const [
     { data: products },
@@ -59,30 +79,35 @@ export default async function OwnerPortal() {
   const rows = [
     ...(sales ?? []).map((row) => {
       const line = row.sale_lines?.[0];
-      const name = line?.item_name_snapshot || 'Product sale';
-      const qty = line ? `${line.quantity} ${line.unit_snapshot || 'pcs'} · ` : '';
+      const name = localizeProductName(line?.item_name_snapshot || 'የምርት ሽያጭ');
+      const unit = line?.unit_snapshot === 'piece' ? 'ክፍል' : line?.unit_snapshot || 'ክፍል';
+      const qty = line ? `${line.quantity} ${unit} · ` : '';
       return {
         id: `sale-${row.id}`,
-        type: 'Sale',
+        type: 'ሽያጭ',
         name,
-        detail: `${qty}${row.customer_name || 'Walk-in'}`,
+        detail: `${qty}${row.customer_name || 'በቀጥታ ሽያጭ'}`,
         amount: Number(row.total_amount),
         date: row.created_at,
       };
     }),
     ...(services ?? []).map((row) => ({
       id: `service-${row.id}`,
-      type: 'Service',
-      name: row.service_type,
-      detail: row.customer_name || 'Service',
+      type: 'አገልግሎት',
+      name: ({
+        battery_charging: 'ባትሪ መሙላት',
+        battery_acid: 'የባትሪ አሲድ መሙላት',
+        welding: 'ብየዳ',
+      } as Record<string, string>)[row.service_type] || row.service_type.replaceAll('_', ' '),
+      detail: row.customer_name || 'አገልግሎት',
       amount: Number(row.amount),
       date: row.created_at,
     })),
     ...(payroll ?? []).map((row) => ({
       id: `payroll-${row.id}`,
-      type: 'Payroll',
-      name: row.worker_name || 'Worker',
-      detail: row.pay_type,
+      type: 'ደመወዝ',
+      name: row.worker_name || 'ሰራተኛ',
+      detail: row.pay_type === 'daily' ? 'የቀን ክፍያ' : row.pay_type === 'weekly' ? 'የሳምንት ክፍያ' : 'የወር ክፍያ',
       amount: -Number(row.amount),
       date: row.paid_at || row.period_start,
     })),
@@ -104,149 +129,166 @@ export default async function OwnerPortal() {
   );
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div className="owner-dashboard space-y-7 sm:space-y-9">
+      <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-slate-900 leading-tight">
-            Owner Overview
+          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-sm font-semibold text-blue-900">
+            <CalendarDays className="h-4 w-4" aria-hidden="true" />
+            {monthLabel}
+          </div>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
+            የንግድ አጠቃላይ እይታ
           </h1>
-          <p className="text-[11px] sm:text-xs text-slate-500 font-mono mt-0.5">{month}</p>
+          <p className="mt-2 text-base text-slate-600">የዚህ ወር ገቢ፣ ወጪ እና የእቃ ክምችት ማጠቃለያ</p>
         </div>
+        <div className="flex flex-wrap gap-3">
+          <Link href="/owner/reports" className="erp-btn-secondary min-h-12 gap-2 px-5 text-base">
+            <ChartNoAxesCombined className="h-5 w-5" aria-hidden="true" />
+            ሪፖርቶችን ይመልከቱ
+          </Link>
+          <Link href="/owner/prices" className="erp-btn-primary min-h-12 gap-2 px-5 text-base">
+            <Tag className="h-5 w-5" aria-hidden="true" />
+            ዋጋዎችን ያስተዳድሩ
+          </Link>
+        </div>
+      </header>
 
-        <Link
-          href="/owner/prices"
-          className="erp-btn-secondary px-3 py-1.5 text-xs font-semibold inline-flex items-center gap-1.5 w-fit"
-        >
-          <Tag className="w-3.5 h-3.5 text-slate-500" />
-          <span>ዋጋዎችን አስተዳድር</span>
-          <ArrowRight className="w-3.5 h-3.5" />
-        </Link>
-      </div>
-
-      {/* 4 Financial Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
-        <div className="erp-card p-3 sm:p-4">
-          <span className="text-[11px] sm:text-xs font-semibold text-slate-500 block">
-            Net Cash Flow
-          </span>
-          <div className="mt-1.5 text-base sm:text-2xl font-bold font-mono text-slate-900 truncate">
-            {money(netCash)}
+      <section aria-label="የወሩ የገንዘብ ማጠቃለያ" className="owner-finance-hero relative overflow-hidden rounded-[2rem] bg-[#111827] p-6 text-white shadow-xl shadow-slate-900/10 sm:p-8 lg:p-10">
+        <div aria-hidden="true" className="pointer-events-none absolute -right-20 -top-36 h-96 w-96 rounded-full border-[48px] border-blue-400/10" />
+        <div aria-hidden="true" className="pointer-events-none absolute -right-2 top-0 h-full w-1/3 bg-gradient-to-l from-blue-500/15 to-transparent" />
+        <div className="relative grid gap-8 lg:grid-cols-[1.1fr_1fr] lg:items-center">
+          <div>
+            <div className="flex items-center gap-3 text-blue-100">
+              <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-400/15 ring-1 ring-blue-200/20">
+                <CircleDollarSign className="h-7 w-7" aria-hidden="true" />
+              </span>
+              <span className="text-base font-semibold">የተጣራ የገንዘብ ፍሰት</span>
+            </div>
+            <p className="mt-6 text-4xl font-bold tracking-tight sm:text-5xl">{money(netCash)}</p>
+            <p className="mt-3 text-base text-slate-300">ከሽያጭና ከአገልግሎት ገቢ የደመወዝ ወጪ ተቀንሶ</p>
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.07] p-4">
+              <ArrowUpRight className="mb-4 h-5 w-5 text-sky-300" aria-hidden="true" />
+              <p className="text-sm font-medium text-slate-300">የምርት ሽያጭ</p>
+              <p className="mt-2 text-xl font-bold">{money(totals.sales)}</p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.07] p-4">
+              <Activity className="mb-4 h-5 w-5 text-blue-300" aria-hidden="true" />
+              <p className="text-sm font-medium text-slate-300">የአገልግሎት ገቢ</p>
+              <p className="mt-2 text-xl font-bold">{money(totals.services)}</p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.07] p-4">
+              <WalletCards className="mb-4 h-5 w-5 text-amber-300" aria-hidden="true" />
+              <p className="text-sm font-medium text-slate-300">የተከፈለ ደመወዝ</p>
+              <p className="mt-2 text-xl font-bold">{money(totals.payroll)}</p>
+            </div>
           </div>
         </div>
+      </section>
 
-        <div className="erp-card p-3 sm:p-4">
-          <span className="text-[11px] sm:text-xs font-semibold text-slate-500 block">
-            Product Sales
-          </span>
-          <div className="mt-1.5 text-base sm:text-2xl font-bold font-mono text-slate-900 truncate">
-            {money(totals.sales)}
-          </div>
-        </div>
-
-        <div className="erp-card p-3 sm:p-4">
-          <span className="text-[11px] sm:text-xs font-semibold text-slate-500 block">
-            Service Income
-          </span>
-          <div className="mt-1.5 text-base sm:text-2xl font-bold font-mono text-slate-900 truncate">
-            {money(totals.services)}
-          </div>
-        </div>
-
-        <div className="erp-card p-3 sm:p-4">
-          <span className="text-[11px] sm:text-xs font-semibold text-slate-500 block">
-            Payroll Paid
-          </span>
-          <div className="mt-1.5 text-base sm:text-2xl font-bold font-mono text-slate-900 truncate">
-            {money(totals.payroll)}
-          </div>
-        </div>
-      </div>
-
-      {/* Grid: Financial Activity + Inventory */}
-      <div className="grid gap-4 lg:grid-cols-12">
-        {/* Activity Table */}
-        <div className="lg:col-span-8 erp-card overflow-hidden">
-          <div className="p-3.5 sm:p-4 border-b border-slate-200 flex items-center justify-between">
-            <h2 className="text-sm font-bold text-slate-900">የቅርብ ጊዜ ግብይቶች</h2>
-            <span className="text-xs font-mono font-semibold text-slate-500">
-              {rows.length} records
-            </span>
+      <section className="grid gap-5 xl:grid-cols-[1.65fr_1fr]">
+        <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+          <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7">
+            <div className="flex items-center gap-3">
+              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-800">
+                <Activity className="h-5 w-5" aria-hidden="true" />
+              </span>
+              <div>
+                <h2 className="text-xl font-bold text-slate-950">የቅርብ ጊዜ እንቅስቃሴ</h2>
+                <p className="mt-1 text-sm text-slate-600">የዚህ ወር ገቢና ወጪ</p>
+              </div>
+            </div>
+            <Link href="/owner/records" className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-base font-semibold text-blue-800 hover:bg-blue-50">
+              ሁሉንም መዝገቦች ይመልከቱ <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs sm:text-sm">
-              <thead className="bg-slate-50 text-[11px] font-bold uppercase text-slate-500 border-b border-slate-200">
-                <tr>
-                  <th className="py-2.5 px-4">ዓይነት</th><th className="py-2.5 px-4">ዝርዝር</th><th className="py-2.5 px-4">ቀን</th><th className="py-2.5 px-4 text-right">መጠን</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {rows.map((row) => (
-                  <tr key={row.id} className="hover:bg-slate-50/50">
-                    <td className="py-3 px-4 font-mono font-semibold text-slate-700">
-                      {row.type}
-                    </td>
-                    <td className="py-3 px-4">
-                      <p className="font-semibold text-slate-900">{row.name}</p>
-                      <p className="text-xs text-slate-400 capitalize">{row.detail}</p>
-                    </td>
-                    <td className="py-3 px-4 text-slate-500 font-mono text-xs">
-                      {new Date(row.date).toLocaleDateString('en-KE', { timeZone: 'Africa/Nairobi' })}
-                    </td>
-                    <td
-                      className={`py-3 px-4 text-right font-mono font-bold ${
-                        row.amount < 0 ? 'text-slate-500' : 'text-slate-900'
-                      }`}
-                    >
-                      {money(row.amount)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
+          <div className="divide-y divide-slate-100 px-5 sm:px-7">
+            {rows.map((row) => {
+              const isExpense = row.amount < 0;
+              return (
+                <div key={row.id} className="flex items-center gap-4 py-4 sm:py-5">
+                  <span className={`hidden h-12 w-12 shrink-0 items-center justify-center rounded-2xl sm:flex ${isExpense ? 'bg-amber-50 text-amber-800' : 'bg-blue-50 text-blue-800'}`}>
+                    {isExpense ? <ArrowDownRight className="h-6 w-6" aria-hidden="true" /> : <ArrowUpRight className="h-6 w-6" aria-hidden="true" />}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="truncate text-base font-bold text-slate-950">{row.name}</p>
+                      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-sm font-semibold text-slate-700">{row.type}</span>
+                    </div>
+                    <p className="mt-1 truncate text-sm text-slate-600">{row.detail}</p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className={`text-base font-bold tabular-nums ${isExpense ? 'text-amber-800' : 'text-slate-950'}`}>
+                      {isExpense ? '− ' : '+ '}{money(Math.abs(row.amount))}
+                    </p>
+                    <time className="mt-1 block text-sm text-slate-600" dateTime={row.date}>
+                      {new Date(row.date).toLocaleDateString('am-ET', { timeZone: 'Africa/Nairobi', month: 'short', day: 'numeric' })}
+                    </time>
+                  </div>
+                </div>
+              );
+            })}
             {rows.length === 0 && (
-              <div className="py-8 text-center text-xs text-slate-400">
-                No transactions recorded this month.
+              <div className="py-12 text-center">
+                <Activity className="mx-auto h-10 w-10 text-slate-400" aria-hidden="true" />
+                <p className="mt-3 text-base font-semibold text-slate-700">በዚህ ወር የተመዘገበ እንቅስቃሴ የለም</p>
               </div>
             )}
           </div>
         </div>
 
-        {/* Stock Health */}
-        <div className="lg:col-span-4 erp-card p-4 sm:p-5 space-y-4">
-          <div>
-            <span className="text-xs font-semibold text-slate-500 block">ጠቅላላ የምርት ክምችት</span>
-            <div className="mt-1.5 text-2xl font-bold font-mono text-slate-900">
-              {stockUnits.toLocaleString()} pcs
+        <aside className="space-y-5">
+          <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-base font-semibold text-slate-600">ጠቅላላ የምርት ክምችት</p>
+                <p className="mt-3 text-4xl font-bold tracking-tight text-slate-950 tabular-nums">{stockUnits.toLocaleString('en-US')}</p>
+                <p className="mt-1 text-base text-slate-600">የምርት ክፍሎች</p>
+              </div>
+              <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-800">
+                <Boxes className="h-6 w-6" aria-hidden="true" />
+              </span>
             </div>
-          </div>
+            <div className="mt-6 grid grid-cols-2 gap-3 border-t border-slate-200 pt-5">
+              <div>
+                <p className="text-sm text-slate-600">በዚህ ወር የተመረተ</p>
+                <p className="mt-1 text-xl font-bold text-slate-950">{totals.output.toLocaleString('en-US')}</p>
+              </div>
+              <div>
+                <p className="text-sm text-slate-600">ዝቅተኛ ክምችት</p>
+                <p className={`mt-1 text-xl font-bold ${lowStock.length ? 'text-rose-700' : 'text-emerald-800'}`}>{lowStock.length} ምርቶች</p>
+              </div>
+            </div>
+          </section>
 
-          <div className="pt-3 border-t border-slate-100">
-            <span className="text-xs font-semibold text-slate-500 block mb-2">
-              Low Stock Warnings ({lowStock.length})
-            </span>
-            {lowStock.length > 0 ? (
-              <ul className="space-y-2">
+          <section className={`rounded-3xl border p-5 shadow-sm sm:p-7 ${lowStock.length ? 'border-amber-300 bg-amber-50' : 'border-emerald-200 bg-emerald-50'}`}>
+            <div className="flex items-center gap-3">
+              <span className={`flex h-11 w-11 items-center justify-center rounded-2xl ${lowStock.length ? 'bg-amber-100 text-amber-900' : 'bg-emerald-100 text-emerald-900'}`}>
+                {lowStock.length ? <AlertTriangle className="h-5 w-5" aria-hidden="true" /> : <Factory className="h-5 w-5" aria-hidden="true" />}
+              </span>
+              <div>
+                <h2 className="text-lg font-bold text-slate-950">{lowStock.length ? 'የክምችት ማስጠንቀቂያ' : 'ክምችት ደህና ነው'}</h2>
+                <p className="mt-1 text-sm text-slate-700">{lowStock.length ? `${lowStock.length} ምርቶች ከመደበኛው ደረጃ በታች ናቸው` : 'ሁሉም ምርቶች በቂ ክምችት አላቸው'}</p>
+              </div>
+            </div>
+            {lowStock.length > 0 && (
+              <ul className="mt-5 space-y-2">
                 {lowStock.map((item) => (
-                  <li
-                    key={item.id}
-                    className="flex items-center justify-between text-xs py-1.5 px-2 bg-slate-50 rounded-lg"
-                  >
-                    <span className="font-medium text-slate-800 truncate">{item.name}</span>
-                    <span className="font-mono font-bold text-rose-600">
-                      {Number(item.stock_on_hand).toLocaleString()} {item.unit}
-                    </span>
+                  <li key={item.id} className="flex items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-white/80 px-4 py-3">
+                    <span className="truncate text-base font-semibold text-slate-900">{item.name}</span>
+                    <span className="shrink-0 text-base font-bold text-rose-800">{Number(item.stock_on_hand).toLocaleString('en-US')} {item.unit}</span>
                   </li>
                 ))}
               </ul>
-            ) : (
-              <p className="text-xs text-slate-400">ሁሉም ምርቶች ከዝቅተኛው የክምችት ደረጃ በላይ ናቸው።</p>
             )}
-          </div>
-        </div>
-      </div>
+            <Link href="/owner/prices" className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-xl text-base font-bold text-slate-900 underline decoration-amber-600 decoration-2 underline-offset-4">
+              የእቃ ዝርዝርን ይመልከቱ <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          </section>
+        </aside>
+      </section>
     </div>
   );
 }

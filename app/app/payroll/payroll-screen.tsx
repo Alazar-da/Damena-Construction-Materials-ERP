@@ -1,9 +1,9 @@
 import { db } from '@/lib/supabase/server';
 import PayrollForm from './payroll-form';
-import { History } from 'lucide-react';
+import { CalendarDays, History, Users, Wallet } from 'lucide-react';
 
 const money = (value: number) =>
-  `ETB ${Number(value || 0).toLocaleString('en-KE', { maximumFractionDigits: 2 })}`;
+  `${Number(value || 0).toLocaleString('en-KE', { maximumFractionDigits: 2 })} ብር`;
 
 const today = () =>
   new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Nairobi' }).format(new Date());
@@ -41,95 +41,95 @@ export default async function PayrollScreen() {
     .reduce((n, r) => n + Number(r.amount), 0);
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            Payroll
-          </h1>
-          <p className="text-xs text-slate-500 mt-0.5">{formatDisplayDate()}</p>
+    <div className="space-y-7 sm:space-y-9">
+      <header className="relative overflow-hidden rounded-[2rem] bg-[#111827] p-6 text-white shadow-lg sm:p-8">
+        <div aria-hidden="true" className="pointer-events-none absolute -right-12 -top-28 h-64 w-64 rounded-full border-[36px] border-blue-400/10" />
+        <div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-sm font-semibold text-blue-100 ring-1 ring-white/10">
+              <CalendarDays className="h-4 w-4" aria-hidden="true" />{formatDisplayDate()}
+            </div>
+            <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">የሰራተኛ ክፍያ</h1>
+            <p className="mt-2 text-base text-slate-300">የቀን፣ የሳምንት ወይም የወር ክፍያ በቀላሉ ይመዝግቡ</p>
+          </div>
+          <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.07] px-4 py-3 sm:min-w-52">
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-400/15 text-blue-200"><Wallet className="h-5 w-5" aria-hidden="true" /></span>
+            <div><p className="text-sm text-slate-300">ዛሬ የተከፈለ</p><strong className="mt-0.5 block text-lg font-bold tabular-nums">{money(todayPaid)}</strong></div>
+          </div>
         </div>
-
-        <div className="bg-sky-50 border border-sky-200 px-3.5 py-2 rounded-xl text-xs">
-          <span className="text-slate-600">የዛሬ ድምር፦ </span>
-          <strong className="text-slate-900 font-mono font-bold text-sm">
-            {money(todayPaid)}
-          </strong>
-        </div>
-      </div>
+      </header>
 
       {/* Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="erp-card p-4">
-          <span className="text-xs font-semibold text-slate-500">ዛሬ የተከፈለ</span>
-          <div className="mt-2 text-2xl font-extrabold text-slate-900 font-mono">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+          <div className="flex items-center gap-3"><span className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-800"><Wallet className="h-5 w-5" aria-hidden="true" /></span><span className="text-base font-semibold text-slate-700">ዛሬ የተከፈለ</span></div>
+          <div className="mt-4 text-2xl font-extrabold text-slate-950 tabular-nums sm:text-3xl">
             {money(todayPaid)}
           </div>
         </div>
 
-        <div className="erp-card p-4">
-          <span className="text-xs font-semibold text-slate-500">በዚህ ወር የተከፈለ</span>
-          <div className="mt-2 text-2xl font-extrabold text-slate-900 font-mono">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+          <div className="flex items-center gap-3"><span className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-800"><CalendarDays className="h-5 w-5" aria-hidden="true" /></span><span className="text-base font-semibold text-slate-700">በዚህ ወር የተከፈለ</span></div>
+          <div className="mt-4 text-2xl font-extrabold text-slate-950 tabular-nums sm:text-3xl">
             {money(monthPaid)}
           </div>
         </div>
 
-        <div className="erp-card p-4">
-          <span className="text-xs font-semibold text-slate-500">የዚህ ወር ክፍያዎች</span>
-          <div className="mt-2 text-2xl font-extrabold text-sky-700 font-mono">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+          <div className="flex items-center gap-3"><span className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-50 text-violet-800"><Users className="h-5 w-5" aria-hidden="true" /></span><span className="text-base font-semibold text-slate-700">የዚህ ወር ክፍያዎች</span></div>
+          <div className="mt-4 text-2xl font-extrabold text-blue-800 tabular-nums sm:text-3xl">
             {paidRecords.filter((r) => String(r.period_start).startsWith(month)).length}
           </div>
         </div>
       </div>
 
       {/* Main Grid: Form + History */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(340px,0.82fr)_minmax(0,1.5fr)] xl:gap-7">
         {/* Form */}
-        <div className="lg:col-span-5">
+        <div>
           <PayrollForm systemDate={date} />
         </div>
 
         {/* History Table */}
-        <div className="lg:col-span-7">
-          <div className="erp-card overflow-hidden">
-            <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+        <div>
+          <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex items-center justify-between gap-4 border-b border-slate-200 p-5 sm:p-6">
               <div className="flex items-center gap-2">
-                <History className="w-4 h-4 text-slate-500" />
-                <h2 className="text-sm font-bold text-slate-900">የክፍያ ታሪክ</h2>
+                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-800"><History className="h-5 w-5" aria-hidden="true" /></span>
+                <div><h2 className="text-lg font-bold text-slate-950 sm:text-xl">የክፍያ ታሪክ</h2><p className="mt-0.5 text-sm text-slate-600">የቅርብ ጊዜ የተመዘገቡ ክፍያዎች</p></div>
               </div>
-              <span className="text-xs text-slate-400 font-mono">
-                {records?.length ?? 0} records
+              <span className="shrink-0 rounded-full bg-slate-100 px-3 py-1.5 text-sm font-semibold text-slate-700">
+                {records?.length ?? 0} ክፍያ
               </span>
             </div>
 
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs sm:text-sm">
-                <thead className="bg-slate-50 text-[11px] font-bold uppercase text-slate-500 border-b border-slate-200">
+                <thead className="border-b border-slate-200 bg-slate-50 text-sm font-bold text-slate-700">
                   <tr>
-                    <th className="py-2.5 px-4">ሰራተኛ</th>
-                    <th className="py-2.5 px-4">ጊዜ</th>
-                    <th className="py-2.5 px-4">መጠን</th>
-                    <th className="py-2.5 px-4">ቀን</th>
+                    <th className="px-4 py-3">ሰራተኛ</th>
+                    <th className="px-4 py-3">የክፍያ ጊዜ</th>
+                    <th className="px-4 py-3">መጠን</th>
+                    <th className="px-4 py-3">ቀን</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {records?.map((r) => (
-                    <tr key={r.id} className="hover:bg-slate-50/50">
-                      <td className="py-3 px-4 font-semibold text-slate-900">
-                        {r.worker_name ?? 'Worker'}
+                    <tr key={r.id} className="transition-colors hover:bg-blue-50/50">
+                      <td className="px-4 py-4 font-semibold text-slate-950">
+                        {r.worker_name ?? 'ሰራተኛ'}
                       </td>
-                      <td className="py-3 px-4 capitalize text-slate-600">
+                      <td className="px-4 py-4 text-slate-700">
                         {r.pay_type === 'daily'
-                          ? 'Day'
+                          ? 'የቀን'
                           : r.pay_type === 'weekly'
-                          ? 'Week'
-                          : 'Month'}
+                          ? 'የሳምንት'
+                          : 'የወር'}
                       </td>
-                      <td className="py-3 px-4 font-mono font-bold text-slate-900">
+                      <td className="whitespace-nowrap px-4 py-4 font-bold tabular-nums text-slate-950">
                         {money(r.amount)}
                       </td>
-                      <td className="py-3 px-4 text-slate-500 font-mono text-xs">
+                      <td className="whitespace-nowrap px-4 py-4 text-slate-600">
                         {r.period_start}
                       </td>
                     </tr>
@@ -138,8 +138,10 @@ export default async function PayrollScreen() {
               </table>
 
               {(!records || records.length === 0) && (
-                <div className="py-8 text-center text-xs text-slate-400">
-                  No wage payments recorded yet.
+                <div className="flex flex-col items-center px-6 py-12 text-center">
+                  <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-500"><History className="h-6 w-6" aria-hidden="true" /></span>
+                  <p className="mt-4 text-base font-semibold text-slate-800">እስካሁን ክፍያ አልተመዘገበም</p>
+                  <p className="mt-1 text-sm text-slate-600">የመጀመሪያውን ክፍያ በግራ በኩል ያስገቡ</p>
                 </div>
               )}
             </div>

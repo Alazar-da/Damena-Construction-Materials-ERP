@@ -28,43 +28,44 @@ export default function ProductionForm({ products }: { products: OutputProduct[]
   const selectedProduct = products.find((p) => p.id === selectedId);
 
   return (
-    <form action={saveProduction} className="erp-card p-5 border-t-2 border-t-sky-500 space-y-4">
-      <div>
-        <h2 className="text-base font-bold text-slate-900">ምርት መዝግብ</h2>
-        <p className="text-xs text-slate-500">የተጠናቀቁ ብሎኮችን ወይም ቴራሶን ወደ መጋዘን ጨምር</p>
+    <form action={saveProduction} className="space-y-7 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
+      <div className="border-b border-slate-200 pb-5">
+        <h2 className="text-xl font-bold text-slate-950">ምርት መዝግብ</h2>
+        <p className="mt-1 text-base text-slate-600">የተጠናቀቁ ብሎኮችን ወይም ቴራሶን ወደ መጋዘን ጨምር</p>
       </div>
 
       {/* Visual Product Selector */}
       <div>
-        <label className="text-xs font-semibold text-slate-700 block mb-1.5">
-          Product
+        <label className="text-base font-bold text-slate-900 block mb-3">
+          የምርት ዓይነት ይምረጡ
         </label>
         <input type="hidden" name="output" value={selectedId} required />
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {products.map((p) => {
             const isSelected = p.id === selectedId;
             return (
               <button
                 key={p.id}
                 type="button"
+                aria-pressed={isSelected}
                 onClick={() => setSelectedId(p.id)}
-                className={`p-2.5 rounded-xl border text-center transition-all flex flex-col items-center justify-between cursor-pointer ${
+                className={`min-h-[160px] rounded-2xl border p-4 text-center transition-all flex flex-col items-center justify-center gap-2 cursor-pointer ${
                   isSelected
-                    ? 'border-sky-500 bg-sky-50 ring-1 ring-sky-400'
-                    : 'border-slate-200 bg-slate-50/60 hover:bg-slate-100'
+                    ? 'border-blue-700 bg-blue-50 ring-2 ring-blue-200'
+                    : 'border-slate-200 bg-white hover:border-blue-300 hover:bg-slate-50'
                 }`}
               >
-                <div className="w-12 h-12 flex items-center justify-center mb-1">
+                <div className="flex h-16 w-20 items-center justify-center rounded-xl bg-white p-2">
                   <Image
                     src={imageFor(p.name)}
                     alt={p.name}
-                    width={48}
-                    height={48}
-                    className="max-h-10 max-w-full object-contain"
+                    width={72}
+                    height={64}
+                    className="max-h-14 max-w-full object-contain"
                   />
                 </div>
-                <div className="font-bold text-xs text-slate-900">{p.name}</div>
+                <div className="text-base font-bold text-slate-950">{p.name.replace(/(\d+\s*\/\s*\d+)\s*Block/i, '$1 ብሎክ').replace(/Terrace/i, 'ቴራሶ')}</div>
               </button>
             );
           })}
@@ -74,8 +75,8 @@ export default function ProductionForm({ products }: { products: OutputProduct[]
       {/* Quantity */}
       <div>
         <div className="flex items-center justify-between mb-1">
-          <label className="text-xs font-semibold text-slate-700">
-            Quantity ({selectedProduct?.unit || 'pcs'})
+          <label className="text-base font-bold text-slate-900">
+            የተመረተ ብዛት ({selectedProduct?.unit === 'piece' ? 'ክፍል' : selectedProduct?.unit || 'ክፍል'})
           </label>
           <div className="flex items-center gap-1">
             {[50, 100, 200, 500].map((num) => (
@@ -83,7 +84,7 @@ export default function ProductionForm({ products }: { products: OutputProduct[]
                 key={num}
                 type="button"
                 onClick={() => setQuantity(String(num))}
-                className="px-1.5 py-0.5 text-[10px] font-semibold bg-sky-50 text-sky-700 rounded hover:bg-sky-100"
+                className="min-w-11 rounded-xl border border-blue-200 bg-white px-3 text-sm font-bold text-blue-900 hover:bg-blue-50"
               >
                 +{num}
               </button>
@@ -105,9 +106,9 @@ export default function ProductionForm({ products }: { products: OutputProduct[]
 
       {/* Notes */}
       <div>
-        <label className="text-xs font-semibold text-slate-700 block mb-1">ማስታወሻ</label>
+        <label className="text-base font-bold text-slate-900 block mb-2">ማስታወሻ (አማራጭ)</label>
         <input
-          className="erp-input text-xs"
+          className="erp-input"
           name="notes"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
@@ -117,7 +118,7 @@ export default function ProductionForm({ products }: { products: OutputProduct[]
 
       <button
         type="submit"
-        className="erp-btn-primary w-full py-2.5 text-xs font-bold cursor-pointer"
+        className="erp-btn-primary min-h-14 w-full rounded-2xl text-lg font-bold cursor-pointer"
       >
         <Plus className="w-4 h-4" />
         <span>ምርቱን መዝግብ</span>

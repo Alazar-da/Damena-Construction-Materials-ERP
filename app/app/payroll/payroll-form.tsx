@@ -11,10 +11,11 @@ export default function PayrollForm({ systemDate }: { systemDate: string }) {
   const [notes, setNotes] = useState('');
 
   return (
-    <form action={createPayroll} className="erp-card p-5 border-t-2 border-t-sky-500 space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-base font-bold text-slate-900">ክፍያ መዝግብ</h2>
-        <span className="text-xs text-slate-400 font-mono">Date: {systemDate}</span>
+    <form action={createPayroll} className="space-y-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
+      <div className="border-b border-slate-200 pb-5">
+        <span className="mb-3 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-800"><Plus className="h-5 w-5" aria-hidden="true" /></span>
+        <h2 className="text-xl font-bold text-slate-950">አዲስ ክፍያ ይመዝግቡ</h2>
+        <p className="mt-1 text-sm text-slate-600">የሰራተኛ ስም፣ የክፍያ ጊዜ እና መጠን ያስገቡ</p>
       </div>
 
       {/* Hidden system-generated date & default payment method */}
@@ -23,11 +24,11 @@ export default function PayrollForm({ systemDate }: { systemDate: string }) {
 
       {/* Worker Name */}
       <div>
-        <label className="text-xs font-semibold text-slate-700 block mb-1">
+        <label className="text-sm font-bold text-slate-800 block mb-2">
           የሰራተኛ ስም
         </label>
         <input
-          className="erp-input text-sm"
+          className="erp-input text-base"
           name="worker_name"
           required
           maxLength={120}
@@ -39,7 +40,7 @@ export default function PayrollForm({ systemDate }: { systemDate: string }) {
 
       {/* Pay Period */}
       <div>
-        <label className="text-xs font-semibold text-slate-700 block mb-1.5">
+        <label className="text-sm font-bold text-slate-800 block mb-2">
           የክፍያ ጊዜ
         </label>
         <input type="hidden" name="pay_type" value={payType} />
@@ -57,10 +58,11 @@ export default function PayrollForm({ systemDate }: { systemDate: string }) {
                 key={item.id}
                 type="button"
                 onClick={() => setPayType(item.id)}
-                className={`py-2 px-3 rounded-xl text-xs font-bold text-center transition-all cursor-pointer ${
+                aria-pressed={isSelected}
+                className={`min-h-12 rounded-xl border px-3 text-sm font-bold text-center transition-all cursor-pointer ${
                   isSelected
-                    ? 'bg-sky-600 text-white shadow-xs'
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    ? 'border-blue-800 bg-blue-800 text-white shadow-sm'
+                    : 'border-slate-200 bg-white text-slate-700 hover:border-blue-300 hover:bg-blue-50'
                 }`}
               >
                 {item.label}
@@ -72,11 +74,11 @@ export default function PayrollForm({ systemDate }: { systemDate: string }) {
 
       {/* Amount */}
       <div>
-        <label className="text-xs font-semibold text-slate-700 block mb-1">
+        <label className="text-sm font-bold text-slate-800 block mb-2">
           መጠን (ብር)
         </label>
         <input
-          className="erp-input font-mono text-base font-bold"
+          className="erp-input font-mono text-lg font-bold"
           name="amount"
           type="number"
           min="0.01"
@@ -90,11 +92,11 @@ export default function PayrollForm({ systemDate }: { systemDate: string }) {
 
       {/* Optional Note */}
       <div>
-        <label className="text-xs font-semibold text-slate-700 block mb-1">
+        <label className="text-sm font-bold text-slate-800 block mb-2">
           ማስታወሻ (አማራጭ)
         </label>
         <input
-          className="erp-input text-xs"
+          className="erp-input text-base"
           name="notes"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
@@ -104,7 +106,7 @@ export default function PayrollForm({ systemDate }: { systemDate: string }) {
 
       <button
         type="submit"
-        className="erp-btn-primary w-full py-2.5 text-xs font-bold cursor-pointer"
+        className="erp-btn-primary min-h-14 w-full rounded-2xl text-base font-bold cursor-pointer"
       >
         <Plus className="w-4 h-4" />
         <span>ክፍያውን መዝግብ</span>

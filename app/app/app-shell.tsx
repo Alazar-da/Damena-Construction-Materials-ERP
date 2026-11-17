@@ -101,7 +101,7 @@ export default function AppShell({
       ========================================================================= */}
       <aside
         className={`fixed inset-y-0 left-0 z-40 hidden md:flex flex-col bg-slate-950 text-slate-100 border-r border-slate-800/80 transition-all duration-300 ease-in-out ${
-          isCollapsed ? 'w-18' : 'w-56'
+          isCollapsed ? 'w-18' : 'w-60'
         }`}
       >
         {/* Border rail toggle button */}
@@ -109,7 +109,7 @@ export default function AppShell({
           onClick={toggleCollapsed}
           type="button"
           aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          className="absolute -right-3 top-5.5 z-50 flex items-center justify-center w-6 h-6 rounded-full bg-slate-900 border border-slate-700 text-slate-400 hover:text-white hover:bg-slate-800 shadow-sm transition-all duration-200 cursor-pointer focus:outline-none"
+          className="absolute -right-5 top-4 z-50 flex items-center justify-center w-11 h-11 rounded-full bg-slate-900 border border-slate-700 text-slate-200 hover:text-white hover:bg-slate-800 shadow-sm transition-all duration-200 cursor-pointer"
         >
           <ChevronLeft
             className={`w-3.5 h-3.5 transition-transform duration-300 ease-in-out ${
@@ -158,7 +158,7 @@ export default function AppShell({
                   if (pathname !== item.href) setNavigating(true);
                 }}
                 className={`group relative flex items-center rounded-lg text-xs transition-all duration-150 cursor-pointer ${
-                  isCollapsed ? 'h-10 w-10 mx-auto justify-center' : 'px-3 py-2 gap-3'
+                  isCollapsed ? 'h-11 w-11 mx-auto justify-center' : 'min-h-11 px-3 py-2 gap-3'
                 } ${
                   isActive
                     ? 'bg-slate-900 text-white font-semibold border border-slate-800 shadow-xs'
@@ -175,7 +175,7 @@ export default function AppShell({
                   }`}
                 />
 
-                {!isCollapsed && <span className="truncate">{item.label}</span>}
+                {!isCollapsed && <span className="truncate text-sm">{item.label}</span>}
 
                 {/* Collapsed Tooltip */}
                 {isCollapsed && (
@@ -349,7 +349,7 @@ export default function AppShell({
       ========================================================================= */}
       <div
         className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out ${
-          isCollapsed ? 'md:pl-18' : 'md:pl-56'
+          isCollapsed ? 'md:pl-18' : 'md:pl-60'
         }`}
       >
         {/* Clean Sticky Top Header */}
@@ -364,7 +364,7 @@ export default function AppShell({
               <Menu className="w-5 h-5" />
             </button>
 
-            <span className="font-bold text-slate-900 text-sm tracking-tight">
+            <span className="font-bold text-slate-900 text-base tracking-tight">
               {currentNav.label}
             </span>
           </div>
@@ -441,7 +441,7 @@ export default function AppShell({
                   <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-slate-950" />
                 )}
               </div>
-              <span className="text-[10px] mt-0.5 tracking-tight leading-none">
+              <span className="text-xs mt-1 tracking-tight leading-tight">
                 {item.mobileLabel}
               </span>
             </Link>
