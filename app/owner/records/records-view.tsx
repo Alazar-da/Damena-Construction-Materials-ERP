@@ -101,6 +101,14 @@ const recordedBy = (value: Sale['profiles']) => {
   return profile?.display_name || 'ያልታወቀ ተጠቃሚ';
 };
 
+const localizeMovementReason = (reason: string) => ({
+  'Used for 10/10 Block': 'ለ10/10 ብሎክ ተሰጥቷል',
+  'Used for 15/15 Block': 'ለ15/15 ብሎክ ተሰጥቷል',
+  'Used for 20/20 Block': 'ለ20/20 ብሎክ ተሰጥቷል',
+  'Used for Terrace': 'ለቴራሶ ተሰጥቷል',
+  'Other production use': 'ለሌላ የምርት ስራ ተሰጥቷል',
+}[reason] || reason);
+
 const categories: [Category, string, React.ComponentType<{ className?: string }>][] = [
   ['sales', 'ሽያጭ', Receipt],
   ['services', 'አገልግሎቶች', BriefcaseBusiness],
@@ -639,7 +647,7 @@ export default function OwnerRecords({
                 key={m.id}
                 type={isReceipt ? 'Receipt' : 'Stock Issue'}
                 title={product?.name || 'Stock item'}
-                subtitle={`${new Date(m.created_at).toLocaleDateString('en-KE')} · ${m.reason}`}
+                subtitle={`${new Date(m.created_at).toLocaleDateString('en-KE')} · ${localizeMovementReason(m.reason)}`}
                 amount={`${isReceipt ? '+' : '−'}${Math.abs(
                   Number(m.quantity_delta)
                 ).toLocaleString()} ${product?.unit || ''}`}

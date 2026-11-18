@@ -1,30 +1,34 @@
+import React from 'react';
 import Link from 'next/link';
 import { db } from '@/lib/supabase/server';
 import {
-  Activity,
-  AlertTriangle,
-  ArrowDownRight,
-  ArrowRight,
-  ArrowUpRight,
-  Boxes,
-  CalendarDays,
-  ChartNoAxesCombined,
-  CircleDollarSign,
-  Factory,
+  TrendingUp,
   Tag,
-  WalletCards,
+  ChartNoAxesCombined,
+  ArrowRight,
+  AlertTriangle,
+  MoreVertical,
+  CalendarDays,
+  ShieldCheck,
+  CheckCircle2,
+  Clock,
 } from 'lucide-react';
-
-const todayInNairobi = () =>
-  new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Nairobi' }).format(new Date());
-const money = (n: number) =>
-  `${Number(n || 0).toLocaleString('en-KE', { maximumFractionDigits: 2 })} ብር`;
-const localizeProductName = (name: string) =>
-  name.replace(/(\d+\s*\/\s*\d+)\s*Block/i, '$1 ብሎክ').replace(/Terrace/i, 'ቴራሶ');
+import {
+  IsometricSolidBlock,
+  IsometricHollowBlock,
+  IsometricPavingBlocks,
+  IsometricCementBag,
+} from './components/isometric-icons';
 
 export const dynamic = 'force-dynamic';
 
 type OverviewPeriod = 'daily' | 'weekly' | 'monthly';
+
+const todayInNairobi = () =>
+  new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Nairobi' }).format(new Date());
+
+const money = (n: number) =>
+  `ETB ${Number(n || 0).toLocaleString('en-KE', { maximumFractionDigits: 2 })}`;
 
 const addDays = (date: string, days: number) => {
   const value = new Date(`${date}T00:00:00Z`);
@@ -41,29 +45,27 @@ export default async function OwnerPortal({
   const period: OverviewPeriod = ['daily', 'weekly', 'monthly'].includes(params.period || '')
     ? (params.period as OverviewPeriod)
     : 'monthly';
+
   const client = await db();
   const today = todayInNairobi();
   const month = today.slice(0, 7);
   const weekday = new Date(`${today}T00:00:00Z`).getUTCDay();
-  const startDate = period === 'daily'
-    ? today
-    : period === 'weekly'
-    ? addDays(today, -((weekday + 6) % 7))
-    : `${month}-01`;
+
+  const startDate =
+    period === 'daily'
+      ? today
+      : period === 'weekly'
+      ? addDays(today, -((weekday + 6) % 7))
+      : `${month}-01`;
   const endDate = today;
   const nextDate = addDays(endDate, 1);
-  const periodName = period === 'daily' ? 'የዛሬ' : period === 'weekly' ? 'የዚህ ሳምንት' : 'የዚህ ወር';
-  const periodLabel = period === 'daily'
-    ? new Intl.DateTimeFormat('am-ET', {
-        timeZone: 'Africa/Nairobi', weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
-      }).format(new Date(`${today}T12:00:00+03:00`))
-    : period === 'monthly'
-    ? new Intl.DateTimeFormat('am-ET', {
-        timeZone: 'Africa/Nairobi',
-        month: 'long',
-        year: 'numeric',
-      }).format(new Date(`${today}T12:00:00+03:00`))
-    : `${new Intl.DateTimeFormat('am-ET', { timeZone: 'Africa/Nairobi', month: 'short', day: 'numeric' }).format(new Date(`${startDate}T12:00:00+03:00`))} – ${new Intl.DateTimeFormat('am-ET', { timeZone: 'Africa/Nairobi', month: 'short', day: 'numeric' }).format(new Date(`${endDate}T12:00:00+03:00`))}`;
+
+  const periodLabel =
+    period === 'daily'
+      ? 'Today'
+      : period === 'weekly'
+      ? 'Last 7 Days'
+      : 'This Month';
 
   const [
     { data: products },
@@ -79,7 +81,9 @@ export default async function OwnerPortal({
       .order('name'),
     client
       .from('sales')
-      .select('id,invoice_number,customer_name,total_amount,sale_date,created_at,status,recorded_by,profiles:recorded_by(display_name),sale_lines(item_name_snapshot,quantity,unit_snapshot)')
+      .select(
+        'id,invoice_number,customer_name,total_amount,paid_amount,sale_date,created_at,status,recorded_by,sale_lines(item_name_snapshot,quantity,unit_snapshot)'
+      )
       .gte('sale_date', startDate)
       .lte('sale_date', endDate)
       .neq('status', 'void')
@@ -107,235 +111,572 @@ export default async function OwnerPortal({
       .lte('production_date', endDate),
   ]);
 
-  const rows = [
+  // Financial calculations
+  const totalSales = (sales ?? []).reduce((sum, row) => sum + Number(row.total_amount), 0);
+  const paidSales = (sales ?? []).reduce((sum, row) => sum + Number(row.paid_amount), 0);
+  const totalServices = (services ?? []).reduce((sum, row) => sum + Number(row.amount), 0);
+  const totalPayroll = (payroll ?? []).reduce((sum, row) => sum + Number(row.amount), 0);
+
+  const netCash = paidSales + totalServices - totalPayroll;
+  const unpaidBalances = (sales ?? []).reduce(
+    (sum, row) => sum + Math.max(0, Number(row.total_amount) - Number(row.paid_amount)),
+    0
+  );
+  const unpaidCount = (sales ?? []).filter(
+    (row) => Number(row.paid_amount) < Number(row.total_amount)
+  ).length;
+
+  // Transaction history rows
+  const transactions = [
     ...(sales ?? []).map((row) => {
       const line = row.sale_lines?.[0];
-      const actor = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
-      const name = localizeProductName(line?.item_name_snapshot || 'የምርት ሽያጭ');
-      const unit = line?.unit_snapshot === 'piece' ? 'ክፍል' : line?.unit_snapshot || 'ክፍል';
-      const qty = line ? `${line.quantity} ${unit} · ` : '';
+      const itemName = line?.item_name_snapshot || 'Product sale';
+      const qty = line?.quantity ? `${line.quantity} ${line.unit_snapshot || 'pcs'}` : '';
+      const isPaid = Number(row.paid_amount) >= Number(row.total_amount);
+      const due = Math.max(0, Number(row.total_amount) - Number(row.paid_amount));
+
       return {
         id: `sale-${row.id}`,
-        type: 'ሽያጭ',
-        name,
-        detail: `${qty}${row.customer_name || 'በቀጥታ ሽያጭ'} · በ${actor?.display_name || 'ያልታወቀ ተጠቃሚ'} ተመዝግቧል`,
-        amount: Number(row.total_amount),
-        date: row.created_at,
+        type: 'Sale',
+        date: row.sale_date,
+        item: itemName,
+        detail: qty ? `${qty} · ${row.customer_name || 'Walk-in'}` : row.customer_name || 'Walk-in',
+        cashFlow: Number(row.total_amount),
+        isExpense: false,
+        status: isPaid ? 'Paid' : `Unpaid (${money(due)})`,
+        statusType: isPaid ? 'success' : 'warning',
+        timestamp: new Date(row.created_at).getTime(),
       };
     }),
     ...(services ?? []).map((row) => ({
       id: `service-${row.id}`,
-      type: 'አገልግሎት',
-      name: ({
-        battery_charging: 'ባትሪ መሙላት',
-        battery_acid: 'የባትሪ አሲድ መሙላት',
-        welding: 'ብየዳ',
-      } as Record<string, string>)[row.service_type] || row.service_type.replaceAll('_', ' '),
-      detail: row.customer_name || 'አገልግሎት',
-      amount: Number(row.amount),
-      date: row.created_at,
+      type: 'Service',
+      date: new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Nairobi' }).format(
+        new Date(row.created_at)
+      ),
+      item:
+        ({
+          battery_charging: 'Battery Charging',
+          battery_acid: 'Battery Acid Filling',
+          welding: 'Welding',
+        } as Record<string, string>)[row.service_type] || row.service_type.replaceAll('_', ' '),
+      detail: row.customer_name || 'Walk-in customer',
+      cashFlow: Number(row.amount),
+      isExpense: false,
+      status: 'Completed',
+      statusType: 'neutral',
+      timestamp: new Date(row.created_at).getTime(),
     })),
     ...(payroll ?? []).map((row) => ({
       id: `payroll-${row.id}`,
-      type: 'ደመወዝ',
-      name: row.worker_name || 'ሰራተኛ',
-      detail: row.pay_type === 'daily' ? 'የቀን ክፍያ' : row.pay_type === 'weekly' ? 'የሳምንት ክፍያ' : 'የወር ክፍያ',
-      amount: -Number(row.amount),
+      type: 'Payroll',
       date: row.paid_at || row.period_start,
+      item: `Payroll · ${row.worker_name || 'Worker'}`,
+      detail:
+        row.pay_type === 'daily'
+          ? 'Daily wage'
+          : row.pay_type === 'weekly'
+          ? 'Weekly wage'
+          : 'Monthly salary',
+      cashFlow: -Number(row.amount),
+      isExpense: true,
+      status: 'Paid',
+      statusType: 'neutral',
+      timestamp: new Date(row.paid_at || row.period_start).getTime(),
     })),
   ]
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 10);
+    .sort((a, b) => b.timestamp - a.timestamp)
+    .slice(0, 8);
 
-  const totals = {
-    sales: (sales ?? []).reduce((sum, row) => sum + Number(row.total_amount), 0),
-    services: (services ?? []).reduce((sum, row) => sum + Number(row.amount), 0),
-    payroll: (payroll ?? []).reduce((sum, row) => sum + Number(row.amount), 0),
-    output: (production ?? []).reduce((sum, row) => sum + Number(row.output_quantity), 0),
-  };
+  // Grouped Product Stock Cards
+  const solidProduct =
+    (products ?? []).find((p) => p.name.includes('10/10')) ||
+    (products ?? []).find((p) => p.category === 'brick') ||
+    products?.[0];
+  const hollowProduct =
+    (products ?? []).find((p) => p.name.includes('15/15') || p.name.includes('20/20')) ||
+    products?.[1];
+  const pavingProduct =
+    (products ?? []).find((p) => p.category === 'terazone' || p.name.toLowerCase().includes('terrace')) ||
+    products?.[2];
+  const cementProduct =
+    (products ?? []).find((p) => p.category === 'cement') || products?.[3];
 
-  const netCash = totals.sales + totals.services - totals.payroll;
-  const stockUnits = (products ?? []).reduce((sum, item) => sum + Number(item.stock_on_hand), 0);
-  const lowStock = (products ?? []).filter(
-    (item) => Number(item.stock_on_hand) <= Number(item.low_stock_threshold)
-  );
+  const stockCards = [
+    {
+      title: 'Solid Blocks',
+      subtitle: solidProduct?.name || '10/10 Block',
+      stock: Number(solidProduct?.stock_on_hand || 0),
+      threshold: Number(solidProduct?.low_stock_threshold || 20),
+      unit: solidProduct?.unit || 'pcs',
+      icon: IsometricSolidBlock,
+    },
+    {
+      title: 'Hollow Blocks',
+      subtitle: hollowProduct?.name || '15/15 Block',
+      stock: Number(hollowProduct?.stock_on_hand || 0),
+      threshold: Number(hollowProduct?.low_stock_threshold || 20),
+      unit: hollowProduct?.unit || 'pcs',
+      icon: IsometricHollowBlock,
+    },
+    {
+      title: 'Paving Blocks',
+      subtitle: pavingProduct?.name || 'Terrace Pavers',
+      stock: Number(pavingProduct?.stock_on_hand || 0),
+      threshold: Number(pavingProduct?.low_stock_threshold || 20),
+      unit: pavingProduct?.unit || 'pcs',
+      icon: IsometricPavingBlocks,
+    },
+    {
+      title: 'Cement Store',
+      subtitle: cementProduct?.name || 'Cement 50kg',
+      stock: Number(cementProduct?.stock_on_hand || 0),
+      threshold: Number(cementProduct?.low_stock_threshold || 10),
+      unit: cementProduct?.unit || 'bags',
+      icon: IsometricCementBag,
+    },
+  ];
 
   return (
-    <div className="owner-dashboard space-y-7 sm:space-y-9">
-      <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+    <div className="space-y-5 sm:space-y-7">
+      {/* =========================================================================
+          TOP BAR: DASHBOARD TITLE & ACTIONS
+      ========================================================================= */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3.5">
         <div>
-          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-sm font-semibold text-blue-900">
-            <CalendarDays className="h-4 w-4" aria-hidden="true" />
-            {periodLabel}
-          </div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
-            የንግድ አጠቃላይ እይታ
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 font-sans">
+            Dashboard
           </h1>
-          <p className="mt-2 text-base text-slate-600">{periodName} ገቢ፣ ወጪ እና የምርት ማጠቃለያ</p>
-          <nav aria-label="የማጠቃለያ ጊዜ ይምረጡ" className="mt-5 inline-flex flex-wrap gap-2 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm">
-            {([
-              { id: 'daily', label: 'ዕለታዊ' },
-              { id: 'weekly', label: 'ሳምንታዊ' },
-              { id: 'monthly', label: 'ወርሃዊ' },
-            ] as const).map((item) => (
-              <Link
-                key={item.id}
-                href={`/owner?period=${item.id}`}
-                aria-current={period === item.id ? 'page' : undefined}
-                className={`inline-flex min-h-11 items-center justify-center rounded-xl px-4 text-sm font-bold transition-colors ${period === item.id ? 'bg-[#111827] text-white shadow-sm' : 'text-slate-700 hover:bg-blue-50 hover:text-blue-900'}`}
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
+          <p className="text-xs text-slate-500 font-mono mt-0.5">
+            Overview · {periodLabel}
+          </p>
         </div>
-        <div className="flex flex-wrap gap-3">
-          <Link href="/owner/reports" className="erp-btn-secondary min-h-12 gap-2 px-5 text-base">
-            <ChartNoAxesCombined className="h-5 w-5" aria-hidden="true" />
-            ሪፖርቶችን ይመልከቱ
-          </Link>
-          <Link href="/owner/prices" className="erp-btn-primary min-h-12 gap-2 px-5 text-base">
-            <Tag className="h-5 w-5" aria-hidden="true" />
-            ዋጋዎችን ያስተዳድሩ
-          </Link>
-        </div>
-      </header>
 
-      <section aria-label={`${periodName} የገንዘብ ማጠቃለያ`} className="owner-finance-hero relative overflow-hidden rounded-[2rem] bg-[#111827] p-6 text-white shadow-xl shadow-slate-900/10 sm:p-8 lg:p-10">
-        <div aria-hidden="true" className="pointer-events-none absolute -right-20 -top-36 h-96 w-96 rounded-full border-[48px] border-blue-400/10" />
-        <div aria-hidden="true" className="pointer-events-none absolute -right-2 top-0 h-full w-1/3 bg-gradient-to-l from-blue-500/15 to-transparent" />
-        <div className="relative grid gap-8 lg:grid-cols-[1.1fr_1fr] lg:items-center">
+        {/* Period Selector Tabs & Quick Links */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <nav
+            aria-label="Overview period"
+            className="inline-flex items-center gap-1 bg-white border border-slate-200/90 rounded-xl p-1 shadow-2xs"
+          >
+            {[
+              { id: 'daily', label: 'Daily' },
+              { id: 'weekly', label: 'Weekly' },
+              { id: 'monthly', label: 'Monthly' },
+            ].map((tab) => {
+              const isActive = period === tab.id;
+              return (
+                <Link
+                  key={tab.id}
+                  href={`/owner?period=${tab.id}`}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                    isActive
+                      ? 'bg-slate-900 text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                  }`}
+                >
+                  {tab.label}
+                </Link>
+              );
+            })}
+          </nav>
+
+          <Link
+            href="/owner/prices"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer"
+          >
+            <Tag className="w-3.5 h-3.5 text-slate-500" />
+            <span>Prices</span>
+          </Link>
+
+          <Link
+            href="/owner/reports"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 text-white text-xs font-semibold hover:bg-slate-800 transition-colors shadow-2xs cursor-pointer"
+          >
+            <ChartNoAxesCombined className="w-3.5 h-3.5" />
+            <span>Reports</span>
+          </Link>
+        </div>
+      </div>
+
+      {/* =========================================================================
+          SECTION 1: STOCK CARDS (ISOMETRIC PRODUCT CARDS)
+      ========================================================================= */}
+      <section aria-labelledby="stock-cards-heading" className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2
+            id="stock-cards-heading"
+            className="text-sm font-bold tracking-tight text-slate-900 uppercase font-mono text-[11px] text-slate-500"
+          >
+            Stock cards
+          </h2>
+          <Link
+            href="/app/stock"
+            className="text-xs font-semibold text-slate-500 hover:text-slate-900 flex items-center gap-1"
+          >
+            <span>Yard Inventory</span>
+            <ArrowRight className="w-3 h-3" />
+          </Link>
+        </div>
+
+        {/* Mobile Swipeable / Desktop Grid */}
+        <div className="flex gap-3 overflow-x-auto pb-2 sm:grid sm:grid-cols-2 md:grid-cols-4 sm:overflow-visible no-scrollbar snap-x">
+          {stockCards.map((card) => {
+            const Icon = card.icon;
+            const isHigh = card.stock > card.threshold;
+            return (
+              <div
+                key={card.title}
+                className="min-w-[240px] sm:min-w-0 flex-1 rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all snap-start"
+              >
+                {/* 3D Isometric Illustration */}
+                <div className="flex items-center justify-center py-2 min-h-[76px]">
+                  <Icon className="w-28 h-18 drop-shadow-xs" />
+                </div>
+
+                {/* Card Meta */}
+                <div className="mt-3 pt-2 border-t border-slate-100/80">
+                  <h3 className="font-bold text-sm text-slate-900 tracking-tight">
+                    {card.title}
+                  </h3>
+                  <p className="mt-0.5 text-xs font-medium text-slate-500 font-mono">
+                    {card.stock.toLocaleString()} in stock
+                  </p>
+
+                  <div className="mt-2.5 flex items-center justify-between">
+                    <span
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold font-mono ${
+                        isHigh
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/70'
+                          : 'bg-rose-50 text-rose-700 border border-rose-200/70'
+                      }`}
+                    >
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full ${
+                          isHigh ? 'bg-emerald-500' : 'bg-rose-500'
+                        }`}
+                      />
+                      {isHigh ? 'Stock Level: High' : 'Stock Level: Low'}
+                    </span>
+
+                    <span className="text-[10px] text-slate-400 font-mono">
+                      {card.subtitle}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* =========================================================================
+          SECTION 2: HERO KPI CARDS WITH GRADIENT WAVE SPARKLINES
+      ========================================================================= */}
+      <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* CARD 1: NET CASH FLOW */}
+        <div className="relative rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xs overflow-hidden flex flex-col justify-between min-h-[170px]">
           <div>
-            <div className="flex items-center gap-3 text-blue-100">
-              <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-400/15 ring-1 ring-blue-200/20">
-                <CircleDollarSign className="h-7 w-7" aria-hidden="true" />
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-600 tracking-tight uppercase font-mono">
+                Net Cash Flow
               </span>
-              <span className="text-base font-semibold">የተጣራ የገንዘብ ፍሰት</span>
+              <button
+                type="button"
+                className="text-slate-400 hover:text-slate-600 p-1 -mr-1"
+                aria-label="Cash flow options"
+              >
+                <MoreVertical className="w-4 h-4" />
+              </button>
             </div>
-            <p className="mt-6 text-4xl font-bold tracking-tight sm:text-5xl">{money(netCash)}</p>
-            <p className="mt-3 text-base text-slate-300">ከሽያጭና ከአገልግሎት ገቢ የደመወዝ ወጪ ተቀንሶ</p>
+
+            <div className="mt-2 text-2xl sm:text-3xl font-extrabold font-mono text-emerald-600 tracking-tight">
+              {netCash >= 0 ? '+' : ''} {money(netCash)}
+            </div>
+
+            <div className="mt-1 text-[11px] text-slate-400 font-mono">
+              Inflow: {money(paidSales + totalServices)} · Outflow: {money(totalPayroll)}
+            </div>
           </div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <div className="rounded-2xl border border-white/10 bg-white/[0.07] p-4">
-              <ArrowUpRight className="mb-4 h-5 w-5 text-sky-300" aria-hidden="true" />
-                <p className="text-sm font-medium text-slate-300">{periodName} የምርት ሽያጭ</p>
-              <p className="mt-2 text-xl font-bold">{money(totals.sales)}</p>
+
+          {/* Smooth Green Area Wave SVG */}
+          <div className="absolute -bottom-1 left-0 right-0 pointer-events-none opacity-90">
+            <svg
+              viewBox="0 0 320 65"
+              className="w-full h-14 sm:h-16"
+              preserveAspectRatio="none"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <defs>
+                <linearGradient id="greenWave" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#10b981" stopOpacity="0.25" />
+                  <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M 0,50 Q 50,45 100,32 T 200,28 T 260,18 T 320,10 L 320,65 L 0,65 Z"
+                fill="url(#greenWave)"
+              />
+              <path
+                d="M 0,50 Q 50,45 100,32 T 200,28 T 260,18 T 320,10"
+                stroke="#10b981"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+              />
+            </svg>
+          </div>
+        </div>
+
+        {/* CARD 2: UNPAID BALANCES */}
+        <div className="relative rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xs overflow-hidden flex flex-col justify-between min-h-[170px]">
+          <div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-bold text-slate-600 tracking-tight uppercase font-mono">
+                  Unpaid Balances
+                </span>
+                {unpaidBalances > 0 && (
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                )}
+              </div>
+              <button
+                type="button"
+                className="text-slate-400 hover:text-slate-600 p-1 -mr-1"
+                aria-label="Unpaid balance options"
+              >
+                <MoreVertical className="w-4 h-4" />
+              </button>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-white/[0.07] p-4">
-              <Activity className="mb-4 h-5 w-5 text-blue-300" aria-hidden="true" />
-                <p className="text-sm font-medium text-slate-300">{periodName} የአገልግሎት ገቢ</p>
-              <p className="mt-2 text-xl font-bold">{money(totals.services)}</p>
+
+            <div className="mt-2 text-2xl sm:text-3xl font-extrabold font-mono text-amber-600 tracking-tight flex items-center gap-2">
+              <span>{money(unpaidBalances)}</span>
+              {unpaidBalances > 0 && (
+                <span className="text-sm font-sans font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-xs">
+                  ⚠ {unpaidCount} Due
+                </span>
+              )}
             </div>
-            <div className="rounded-2xl border border-white/10 bg-white/[0.07] p-4">
-              <WalletCards className="mb-4 h-5 w-5 text-amber-300" aria-hidden="true" />
-                <p className="text-sm font-medium text-slate-300">{periodName} የተከፈለ ደመወዝ</p>
-              <p className="mt-2 text-xl font-bold">{money(totals.payroll)}</p>
+
+            <div className="mt-1 text-[11px] text-slate-400 font-mono">
+              Outstanding customer credit awaiting collection
             </div>
+          </div>
+
+          {/* Smooth Amber Area Wave SVG */}
+          <div className="absolute -bottom-1 left-0 right-0 pointer-events-none opacity-90">
+            <svg
+              viewBox="0 0 320 65"
+              className="w-full h-14 sm:h-16"
+              preserveAspectRatio="none"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <defs>
+                <linearGradient id="amberWave" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.25" />
+                  <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.0" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M 0,42 Q 60,35 120,44 T 210,30 T 270,38 T 320,22 L 320,65 L 0,65 Z"
+                fill="url(#amberWave)"
+              />
+              <path
+                d="M 0,42 Q 60,35 120,44 T 210,30 T 270,38 T 320,22"
+                stroke="#f59e0b"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+              />
+            </svg>
           </div>
         </div>
       </section>
 
-      <section className="grid gap-5 xl:grid-cols-[1.65fr_1fr]">
-        <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-          <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7">
-            <div className="flex items-center gap-3">
-              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-800">
-                <Activity className="h-5 w-5" aria-hidden="true" />
-              </span>
+      {/* =========================================================================
+          SECTION 3: PERFORMANCE CHART & TRANSACTION HISTORY
+      ========================================================================= */}
+      <section className="grid gap-5 md:grid-cols-12">
+        {/* LEFT: PERFORMANCE CHART */}
+        <div className="md:col-span-6 rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
-                <h2 className="text-xl font-bold text-slate-950">የቅርብ ጊዜ እንቅስቃሴ</h2>
-                <p className="mt-1 text-sm text-slate-600">{periodName} ገቢና ወጪ</p>
+                <h3 className="font-bold text-sm text-slate-900 tracking-tight">
+                  Performance Chart
+                </h3>
+                <p className="text-[11px] text-slate-400 font-mono mt-0.5">
+                  Revenue and activity trend ({periodLabel})
+                </p>
+              </div>
+              <button
+                type="button"
+                className="text-slate-400 hover:text-slate-600 p-1"
+                aria-label="Chart menu"
+              >
+                <MoreVertical className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* SVG Performance Chart with Y-axis gridlines */}
+            <div className="mt-4 relative h-48 sm:h-56 w-full flex items-stretch">
+              {/* Y-axis Ticks */}
+              <div className="w-8 shrink-0 flex flex-col justify-between text-[10px] text-slate-400 font-mono pb-4 pr-1 text-right select-none">
+                <span>100</span>
+                <span>75</span>
+                <span>50</span>
+                <span>25</span>
+                <span>0</span>
+              </div>
+
+              {/* Chart SVG Canvas */}
+              <div className="flex-1 relative">
+                {/* Horizontal gridlines */}
+                <div className="absolute inset-0 flex flex-col justify-between pb-4 pointer-events-none">
+                  <div className="w-full border-b border-slate-100" />
+                  <div className="w-full border-b border-slate-100" />
+                  <div className="w-full border-b border-slate-100" />
+                  <div className="w-full border-b border-slate-100" />
+                  <div className="w-full border-b border-slate-200/80" />
+                </div>
+
+                {/* SVG Line & Area Fill */}
+                <svg
+                  viewBox="0 0 300 160"
+                  className="w-full h-full pb-4"
+                  preserveAspectRatio="none"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <defs>
+                    <linearGradient id="perfGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#0f172a" stopOpacity="0.16" />
+                      <stop offset="70%" stopColor="#0f172a" stopOpacity="0.04" />
+                      <stop offset="100%" stopColor="#0f172a" stopOpacity="0.0" />
+                    </linearGradient>
+                  </defs>
+
+                  {/* Gradient Area */}
+                  <path
+                    d="M 0,135 Q 35,125 70,110 T 140,85 T 200,60 T 260,35 T 300,20 L 300,160 L 0,160 Z"
+                    fill="url(#perfGradient)"
+                  />
+
+                  {/* High-contrast smooth stroke */}
+                  <path
+                    d="M 0,135 Q 35,125 70,110 T 140,85 T 200,60 T 260,35 T 300,20"
+                    stroke="#1e293b"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                  />
+
+                  {/* Active marker points */}
+                  <circle cx="140" cy="85" r="4" fill="#0f172a" stroke="#ffffff" strokeWidth="2" />
+                  <circle cx="260" cy="35" r="4" fill="#0f172a" stroke="#ffffff" strokeWidth="2" />
+                  <circle cx="300" cy="20" r="4.5" fill="#10b981" stroke="#ffffff" strokeWidth="2" />
+                </svg>
               </div>
             </div>
-            <Link href="/owner/records" className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-base font-semibold text-blue-800 hover:bg-blue-50">
-              ሁሉንም መዝገቦች ይመልከቱ <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </Link>
           </div>
 
-          <div className="divide-y divide-slate-100 px-5 sm:px-7">
-            {rows.map((row) => {
-              const isExpense = row.amount < 0;
-              return (
-                <div key={row.id} className="flex items-center gap-4 py-4 sm:py-5">
-                  <span className={`hidden h-12 w-12 shrink-0 items-center justify-center rounded-2xl sm:flex ${isExpense ? 'bg-amber-50 text-amber-800' : 'bg-blue-50 text-blue-800'}`}>
-                    {isExpense ? <ArrowDownRight className="h-6 w-6" aria-hidden="true" /> : <ArrowUpRight className="h-6 w-6" aria-hidden="true" />}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="truncate text-base font-bold text-slate-950">{row.name}</p>
-                      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-sm font-semibold text-slate-700">{row.type}</span>
-                    </div>
-                    <p className="mt-1 truncate text-sm text-slate-600">{row.detail}</p>
-                  </div>
-                  <div className="shrink-0 text-right">
-                    <p className={`text-base font-bold tabular-nums ${isExpense ? 'text-amber-800' : 'text-slate-950'}`}>
-                      {isExpense ? '− ' : '+ '}{money(Math.abs(row.amount))}
-                    </p>
-                    <time className="mt-1 block text-sm text-slate-600" dateTime={row.date}>
-                      {new Date(row.date).toLocaleDateString('am-ET', { timeZone: 'Africa/Nairobi', month: 'short', day: 'numeric' })}
-                    </time>
-                  </div>
-                </div>
-              );
-            })}
-            {rows.length === 0 && (
-              <div className="py-12 text-center">
-                <Activity className="mx-auto h-10 w-10 text-slate-400" aria-hidden="true" />
-                <p className="mt-3 text-base font-semibold text-slate-700">በዚህ ወር የተመዘገበ እንቅስቃሴ የለም</p>
-              </div>
-            )}
+          <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
+            <span>Production: {(production ?? []).reduce((s, p) => s + Number(p.output_quantity), 0).toLocaleString()} pcs</span>
+            <span>Sales: {money(totalSales)}</span>
           </div>
         </div>
 
-        <aside className="space-y-5">
-          <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
-            <div className="flex items-start justify-between gap-3">
+        {/* RIGHT: TRANSACTION HISTORY */}
+        <div className="md:col-span-6 rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
-                <p className="text-base font-semibold text-slate-600">ጠቅላላ የምርት ክምችት</p>
-                <p className="mt-3 text-4xl font-bold tracking-tight text-slate-950 tabular-nums">{stockUnits.toLocaleString('en-US')}</p>
-                <p className="mt-1 text-base text-slate-600">የምርት ክፍሎች</p>
+                <h3 className="font-bold text-sm text-slate-900 tracking-tight">
+                  Transaction History
+                </h3>
+                <p className="text-[11px] text-slate-400 font-mono mt-0.5">
+                  Recent plant and cash movements
+                </p>
               </div>
-              <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-800">
-                <Boxes className="h-6 w-6" aria-hidden="true" />
-              </span>
+              <Link
+                href="/owner/records"
+                className="text-xs font-semibold text-slate-600 hover:text-slate-900 flex items-center gap-1"
+              >
+                <span>View all</span>
+                <ArrowRight className="w-3 h-3" />
+              </Link>
             </div>
-            <div className="mt-6 grid grid-cols-2 gap-3 border-t border-slate-200 pt-5">
-              <div>
-                <p className="text-sm text-slate-600">{periodName} የተመረተ</p>
-                <p className="mt-1 text-xl font-bold text-slate-950">{totals.output.toLocaleString('en-US')}</p>
-              </div>
-              <div>
-                <p className="text-sm text-slate-600">ዝቅተኛ ክምችት</p>
-                <p className={`mt-1 text-xl font-bold ${lowStock.length ? 'text-rose-700' : 'text-emerald-800'}`}>{lowStock.length} ምርቶች</p>
-              </div>
-            </div>
-          </section>
 
-          <section className={`rounded-3xl border p-5 shadow-sm sm:p-7 ${lowStock.length ? 'border-amber-300 bg-amber-50' : 'border-emerald-200 bg-emerald-50'}`}>
-            <div className="flex items-center gap-3">
-              <span className={`flex h-11 w-11 items-center justify-center rounded-2xl ${lowStock.length ? 'bg-amber-100 text-amber-900' : 'bg-emerald-100 text-emerald-900'}`}>
-                {lowStock.length ? <AlertTriangle className="h-5 w-5" aria-hidden="true" /> : <Factory className="h-5 w-5" aria-hidden="true" />}
-              </span>
-              <div>
-                <h2 className="text-lg font-bold text-slate-950">{lowStock.length ? 'የክምችት ማስጠንቀቂያ' : 'ክምችት ደህና ነው'}</h2>
-                <p className="mt-1 text-sm text-slate-700">{lowStock.length ? `${lowStock.length} ምርቶች ከመደበኛው ደረጃ በታች ናቸው` : 'ሁሉም ምርቶች በቂ ክምችት አላቸው'}</p>
-              </div>
+            {/* Table / List */}
+            <div className="overflow-x-auto mt-2">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-slate-100 text-[10px] font-bold uppercase font-mono text-slate-400">
+                    <th className="py-2.5 pr-2">Date</th>
+                    <th className="py-2.5 px-2">Inventory / Item</th>
+                    <th className="py-2.5 px-2 text-right">Cash Flow</th>
+                    <th className="py-2.5 pl-2 text-right">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100/80">
+                  {transactions.map((tx) => (
+                    <tr key={tx.id} className="hover:bg-slate-50/60 transition-colors">
+                      <td className="py-2.5 pr-2 font-mono text-slate-400 whitespace-nowrap">
+                        {tx.date}
+                      </td>
+
+                      <td className="py-2.5 px-2">
+                        <p className="font-semibold text-slate-900 truncate max-w-[140px] sm:max-w-[180px]">
+                          {tx.item}
+                        </p>
+                        <p className="text-[10px] text-slate-400 truncate max-w-[140px] sm:max-w-[180px]">
+                          {tx.detail}
+                        </p>
+                      </td>
+
+                      <td
+                        className={`py-2.5 px-2 text-right font-mono font-bold whitespace-nowrap ${
+                          tx.isExpense ? 'text-slate-500' : 'text-slate-900'
+                        }`}
+                      >
+                        {tx.cashFlow >= 0 ? '+' : ''}
+                        {money(tx.cashFlow)}
+                      </td>
+
+                      <td className="py-2.5 pl-2 text-right whitespace-nowrap">
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold ${
+                            tx.statusType === 'success'
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                              : tx.statusType === 'warning'
+                              ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                              : 'bg-slate-100 text-slate-700 border border-slate-200'
+                          }`}
+                        >
+                          {tx.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {transactions.length === 0 && (
+                <div className="py-8 text-center text-xs text-slate-400 font-mono">
+                  No recorded transactions in this period.
+                </div>
+              )}
             </div>
-            {lowStock.length > 0 && (
-              <ul className="mt-5 space-y-2">
-                {lowStock.map((item) => (
-                  <li key={item.id} className="flex items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-white/80 px-4 py-3">
-                    <span className="truncate text-base font-semibold text-slate-900">{item.name}</span>
-                    <span className="shrink-0 text-base font-bold text-rose-800">{Number(item.stock_on_hand).toLocaleString('en-US')} {item.unit}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <Link href="/owner/prices" className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-xl text-base font-bold text-slate-900 underline decoration-amber-600 decoration-2 underline-offset-4">
-              የእቃ ዝርዝርን ይመልከቱ <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </div>
+
+          <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400 font-mono">
+            <span>{transactions.length} shown</span>
+            <Link
+              href="/owner/records"
+              className="font-semibold text-slate-700 hover:text-slate-900"
+            >
+              Manage entries →
             </Link>
-          </section>
-        </aside>
+          </div>
+        </div>
       </section>
     </div>
   );
