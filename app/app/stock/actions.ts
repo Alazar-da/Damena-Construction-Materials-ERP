@@ -1,3 +1,3 @@
 'use server'; import {redirect} from 'next/navigation'; import {db} from '@/lib/supabase/server';
 export async function receive(formData:FormData){const c=await db(); const {error}=await c.rpc('receive_cement',{p_quantity:Number(formData.get('quantity')),p_reason:String(formData.get('reason')||'Cement received')}); if(error) throw new Error(error.message); redirect('/app/stock');}
-export async function issue(formData:FormData){const c=await db(); const {error}=await c.rpc('issue_cement',{p_quantity:Number(formData.get('quantity')),p_reason:String(formData.get('reason')||'Given to production')}); if(error) throw new Error(error.message); redirect('/app/stock');}
+export async function issue(formData:FormData){const c=await db(); const {error}=await c.rpc('issue_cement',{p_quantity:Number(formData.get('quantity')),p_reason:String(formData.get('reason')||'Used for 10/10 Block')}); if(error) throw new Error(error.message); redirect('/app/stock');}

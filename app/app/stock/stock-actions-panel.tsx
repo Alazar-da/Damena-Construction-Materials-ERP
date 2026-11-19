@@ -9,7 +9,7 @@ export default function StockActionsPanel({ cementOnHand }: { cementOnHand: numb
   const [receiveQty, setReceiveQty] = useState('');
   const [receiveReason, setReceiveReason] = useState('Supplier delivery');
   const [issueQty, setIssueQty] = useState('');
-  const [issueReason, setIssueReason] = useState('Production shift');
+  const [issueReason, setIssueReason] = useState('Used for 10/10 Block');
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -131,14 +131,21 @@ export default function StockActionsPanel({ cementOnHand }: { cementOnHand: numb
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-slate-700 block mb-1">ምክንያት</label>
-            <input
-              className="erp-input text-xs"
+            <label className="text-sm font-bold text-slate-800 block mb-2" htmlFor="cement-use-purpose">ሲሚንቶው ለምን ይወጣል?</label>
+            <select
+              id="cement-use-purpose"
+              className="erp-input text-base font-semibold"
               name="reason"
               value={issueReason}
               onChange={(e) => setIssueReason(e.target.value)}
-              placeholder="ለምሳሌ፦ የጠዋት ፈረቃ"
-            />
+              required
+            >
+              <option value="Used for 10/10 Block">10/10 ብሎክ</option>
+              <option value="Used for 15/15 Block">15/15 ብሎክ</option>
+              <option value="Used for 20/20 Block">20/20 ብሎክ</option>
+              <option value="Used for Terrace">ቴራሶ</option>
+              <option value="Other production use">ሌላ የምርት ስራ</option>
+            </select>
           </div>
 
           <button

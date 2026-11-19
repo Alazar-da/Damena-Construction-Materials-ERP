@@ -1,6 +1,14 @@
 import Image from 'next/image';
 import { db } from '@/lib/supabase/server';
 import StockActionsPanel from './stock-actions-panel';
+
+const localizeReason = (reason: string | null) => ({
+  'Used for 10/10 Block': 'ለ10/10 ብሎክ ተሰጥቷል',
+  'Used for 15/15 Block': 'ለ15/15 ብሎክ ተሰጥቷል',
+  'Used for 20/20 Block': 'ለ20/20 ብሎክ ተሰጥቷል',
+  'Used for Terrace': 'ለቴራሶ ተሰጥቷል',
+  'Other production use': 'ለሌላ የምርት ስራ ተሰጥቷል',
+}[reason || ''] || reason || '—');
 import { Warehouse, History } from 'lucide-react';
 
 const storeNames = [
@@ -77,7 +85,7 @@ export default async function StockPage() {
       </div>
 
       {/* Stock Cards (5 Items) */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3.5">
         {items?.map((item) => {
           const qty = Number(item.stock_on_hand);
           const isOutOfStock = qty <= 0;
@@ -219,7 +227,7 @@ export default async function StockPage() {
                         {m.quantity_delta}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-slate-600">{m.reason || '—'}</td>
+                    <td className="py-3 px-4 text-slate-600">{localizeReason(m.reason)}</td>
                   </tr>
                 );
               })}
