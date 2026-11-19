@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import { saveProduction } from './actions';
-import { Plus } from 'lucide-react';
+import { Plus, Check, Minus } from 'lucide-react';
 
 interface OutputProduct {
   id: string;
@@ -15,113 +15,154 @@ const imageFor = (name: string) =>
   name === '10/10 Block'
     ? '/products/block-10-10.png'
     : name === '15/15 Block'
-    ? '/products/block-15-15.png'
-    : name === '20/20 Block'
-    ? '/products/block-20-20.png'
-    : '/products/terrace.png';
+      ? '/products/block-15-15.png'
+      : name === '20/20 Block'
+        ? '/products/block-20-20.png'
+        : '/products/terrace.png';
+
+const displayProductName = (name: string) =>
+  name.replace(/(\d+\s*\/\s*\d+)\s*Block/i, '$1 ብሎክ').replace(/Terrace/i, 'ቴራሶ');
 
 export default function ProductionForm({ products }: { products: OutputProduct[] }) {
   const [selectedId, setSelectedId] = useState(products[0]?.id || '');
-  const [quantity, setQuantity] = useState('');
-  const [notes, setNotes] = useState('Morning shift');
+  const [quantity, setQuantity] = useState('500');
+  const [notes, setNotes] = useState('');
 
   const selectedProduct = products.find((p) => p.id === selectedId);
 
+  const stepQuantity = (delta: number) => {
+    const current = Number(quantity) || 0;
+    const next = Math.max(1, current + delta);
+    setQuantity(String(next));
+  };
+
   return (
-    <form action={saveProduction} className="space-y-7 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
-      <div className="border-b border-slate-200 pb-5">
-        <h2 className="text-xl font-bold text-slate-950">ምርት መዝግብ</h2>
-        <p className="mt-1 text-base text-slate-600">የተጠናቀቁ ብሎኮችን ወይም ቴራሶን ወደ መጋዘን ጨምር</p>
+    <form action={saveProduction} className="space-y-4 rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-5 shadow-xs">
+      <div className="border-b border-slate-100 pb-2.5 flex items-center justify-between">
+        <div>
+          <h2 className="text-sm font-bold text-slate-900">አዲስ ባች መዝግብ</h2>
+          <p className="text-[11px] text-slate-500">የተመረተውን ዓይነት እና ብዛት ያስገቡ</p>
+        </div>
+        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-600 uppercase">
+          Batch Entry
+        </span>
       </div>
 
-      {/* Visual Product Selector */}
+      {/* 1. Visual Product Photo Selector */}
       <div>
-        <label className="text-base font-bold text-slate-900 block mb-3">
-          የምርት ዓይነት ይምረጡ
+        <label className="text-xs font-bold text-slate-800 block mb-2">
+          1. የምርት ዓይነት ይምረጡ (Select Product)
         </label>
         <input type="hidden" name="output" value={selectedId} required />
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
           {products.map((p) => {
             const isSelected = p.id === selectedId;
+            const productName = displayProductName(p.name);
+
             return (
               <button
                 key={p.id}
                 type="button"
                 aria-pressed={isSelected}
                 onClick={() => setSelectedId(p.id)}
-                className={`min-h-[160px] rounded-2xl border p-4 text-center transition-all flex flex-col items-center justify-center gap-2 cursor-pointer ${
+                className={`group rounded-xl border p-2 flex flex-col items-center text-center transition-all cursor-pointer relative ${
                   isSelected
-                    ? 'border-blue-700 bg-blue-50 ring-2 ring-blue-200'
-                    : 'border-slate-200 bg-white hover:border-blue-300 hover:bg-slate-50'
+                    ? 'border-2 border-emerald-600 bg-white shadow-sm ring-2 ring-emerald-500/15'
+                    : 'border-slate-200/90 bg-white hover:border-slate-300 hover:shadow-xs'
                 }`}
               >
-                <div className="flex h-16 w-20 items-center justify-center rounded-xl bg-white p-2">
+                {isSelected && (
+                  <span className="absolute top-1.5 right-1.5 z-10 px-1.5 py-0.2 rounded-full bg-emerald-600 text-white text-[9px] font-bold shadow-xs flex items-center gap-0.5">
+                    <Check className="w-2.5 h-2.5 stroke-[3]" />
+                    <span>የተመረጠ</span>
+                  </span>
+                )}
+
+                <div className="w-full h-18 flex items-center justify-center p-0.5 group-hover:scale-105 transition-transform">
                   <Image
                     src={imageFor(p.name)}
                     alt={p.name}
-                    width={72}
-                    height={64}
-                    className="max-h-14 max-w-full object-contain"
+                    width={80}
+                    height={70}
+                    className="max-h-16 w-auto object-contain drop-shadow-md"
                   />
                 </div>
-                <div className="text-base font-bold text-slate-950">{p.name.replace(/(\d+\s*\/\s*\d+)\s*Block/i, '$1 ብሎክ').replace(/Terrace/i, 'ቴራሶ')}</div>
+
+                <div className={`mt-1 w-full pt-1.5 border-t text-center ${isSelected ? 'border-emerald-100' : 'border-slate-100'}`}>
+                  <span className={`font-bold text-xs truncate block ${isSelected ? 'text-emerald-950 font-extrabold' : 'text-slate-900'}`}>
+                    {productName}
+                  </span>
+                </div>
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* Quantity */}
+      {/* 2. Quantity Stepper */}
       <div>
         <div className="flex items-center justify-between mb-1">
-          <label className="text-base font-bold text-slate-900">
-            የተመረተ ብዛት ({selectedProduct?.unit === 'piece' ? 'ክፍል' : selectedProduct?.unit || 'ክፍል'})
+          <label className="text-xs font-bold text-slate-800">
+            2. የተመረተ ብዛት ({selectedProduct?.unit === 'piece' ? 'ክፍሎች' : selectedProduct?.unit || 'ክፍሎች'})
           </label>
-          <div className="flex items-center gap-1">
-            {[50, 100, 200, 500].map((num) => (
-              <button
-                key={num}
-                type="button"
-                onClick={() => setQuantity(String(num))}
-                className="min-w-11 rounded-xl border border-blue-200 bg-white px-3 text-sm font-bold text-blue-900 hover:bg-blue-50"
-              >
-                +{num}
-              </button>
-            ))}
-          </div>
         </div>
-        <input
-          className="erp-input font-mono font-bold"
-          name="output_quantity"
-          type="number"
-          min="0.001"
-          step="0.001"
-          required
-          placeholder="0"
-          value={quantity}
-          onChange={(e) => setQuantity(e.target.value)}
-        />
+
+        {/* Touch Stepper */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => stepQuantity(-50)}
+            className="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-extrabold text-lg flex items-center justify-center transition-colors cursor-pointer"
+          >
+            <Minus className="w-4 h-4" />
+          </button>
+          <input
+            className="flex-1 h-10 bg-slate-50 border border-slate-200 rounded-xl text-center font-mono font-extrabold text-base text-slate-900 focus:bg-white focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+            name="output_quantity"
+            type="number"
+            min="1"
+            step="1"
+            required
+            value={quantity}
+            onChange={(e) => setQuantity(e.target.value)}
+            onWheel={(e) => {
+              e.currentTarget.blur();
+              e.preventDefault();
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => stepQuantity(50)}
+            className="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-extrabold text-lg flex items-center justify-center transition-colors cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
-      {/* Notes */}
+      {/* 3. Optional Empty Notes */}
       <div>
-        <label className="text-base font-bold text-slate-900 block mb-2">ማስታወሻ (አማራጭ)</label>
+        <label className="text-[11px] font-bold text-slate-700 flex items-center justify-between mb-1">
+          <span>3. ማስታወሻ (አማራጭ)</span>
+          <span className="text-[9px] text-slate-400 font-normal">አስፈላጊ ከሆነ ብቻ ይሙሉ</span>
+        </label>
         <input
-          className="erp-input"
+          className="w-full h-9 px-3 rounded-xl border border-slate-200 bg-slate-50/70 text-xs text-slate-900 focus:bg-white focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
           name="notes"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          placeholder="ለምሳሌ፦ የጠዋት ፈረቃ"
+          placeholder="ለምሳሌ፦ የፈረቃ ወይም የምርት ሁኔታ... (አማራጭ)"
         />
       </div>
 
+      {/* 4. Primary Submit Button */}
       <button
         type="submit"
-        className="erp-btn-primary min-h-14 w-full rounded-2xl text-lg font-bold cursor-pointer"
+        className="w-full h-11 rounded-xl bg-slate-950 hover:bg-slate-900 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-all hover:shadow-md cursor-pointer"
       >
-        <Plus className="w-4 h-4" />
-        <span>ምርቱን መዝግብ</span>
+        <Plus className="w-4 h-4 text-emerald-400 stroke-[2.5]" />
+        <span>ምርቱን ወደ መጋዘን መዝግብ</span>
       </button>
     </form>
   );
