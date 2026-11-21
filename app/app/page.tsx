@@ -10,6 +10,9 @@ const nextDay = (day: string) => {
   return value.toISOString().slice(0, 10);
 };
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function Dashboard() {
   const client = await db();
   const date = today();
@@ -29,7 +32,7 @@ export default async function Dashboard() {
       .from('inventory_movements')
       .select('id,quantity_delta,movement_type,created_at,reason,product_id')
       .order('created_at', { ascending: false })
-      .limit(10),
+      .limit(5),
     client
       .from('inventory_movements')
       .select('quantity_delta')

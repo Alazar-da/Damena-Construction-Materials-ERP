@@ -165,7 +165,7 @@ export default function DashboardView({
             <Link href="/app/stock" className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-base font-semibold text-blue-800 hover:bg-blue-50">ሁሉንም ይመልከቱ <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>
           </div>
           <div className="divide-y divide-slate-100 px-5 sm:px-7">
-            {movements.map((movement) => {
+            {movements.slice(0, 5).map((movement) => {
               const isNegative = Number(movement.quantity_delta) < 0;
               return (
                 <div key={movement.id} className="flex items-center gap-4 py-4">
