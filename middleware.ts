@@ -38,21 +38,27 @@ export async function middleware(request: NextRequest) {
 
   // Full page loads & Login verification
   let response = NextResponse.next({ request });
-  const client = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll: () => request.cookies.getAll(),
-        setAll: (values) =>
-          values.forEach(({ name, value, options }) => {
-            request.cookies.set(name, value);
-            response = NextResponse.next({ request });
-            response.cookies.set(name, value, options);
-          }),
-      },
-    }
-  );
+  const supabaseUrl =
+    process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    process.env.SUPABASE_URL ||
+    'https://placeholder.supabase.co';
+  const supabaseKey =
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    process.env.SUPABASE_PUBLISHABLE_KEY ||
+    process.env.SUPABASE_ANON_KEY ||
+    'placeholder-anon-key';
+
+  const client = createServerClient(supabaseUrl, supabaseKey, {
+    cookies: {
+      getAll: () => request.cookies.getAll(),
+      setAll: (values) =>
+        values.forEach(({ name, value, options }) => {
+          request.cookies.set(name, value);
+          response = NextResponse.next({ request });
+          response.cookies.set(name, value, options);
+        }),
+    },
+  });
 
   const {
     data: { user },
