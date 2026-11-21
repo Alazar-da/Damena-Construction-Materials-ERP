@@ -360,19 +360,18 @@ export default function SalesDesk({
 
             {/* Payment Method Selector */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700 block">የክፍያ ሁኔታ (Payment)</label>
+              <label className="text-xs font-semibold text-slate-700 block">የክፍያ ዘዴ (Payment Method)</label>
               <input type="hidden" name="payment_method" value={paymentMethod} />
-              <div className="grid grid-cols-3 gap-1">
+              <div className="grid grid-cols-2 gap-1.5">
                 {[
-                  { id: 'cash', label: 'ጥሬ ገንዘብ' },
-                  { id: 'bank', label: 'ባንክ' },
-                  { id: 'credit', label: 'በዱቤ' },
+                  { id: 'cash', label: 'ጥሬ ገንዘብ (Cash)' },
+                  { id: 'bank', label: 'ባንክ / ዲጂታል (Bank/Digital)' },
                 ].map((m) => (
                   <button
                     key={m.id}
                     type="button"
                     onClick={() => setPaymentMethod(m.id)}
-                    className={`py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${paymentMethod === m.id
+                    className={`py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${paymentMethod === m.id
                       ? 'border-slate-900 bg-slate-900 text-white shadow-xs'
                       : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
                       }`}
@@ -540,7 +539,7 @@ export default function SalesDesk({
               className="px-6 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold flex items-center gap-2 shadow-2xs transition-all hover:border-slate-300 hover:shadow-xs cursor-pointer"
             >
               <History className="w-4 h-4 text-emerald-600" />
-              <span>የሽያጭ ታሪክ ይመልከቱ (View Sales History)</span>
+              <span>የሽያጭ ታሪክ አሳይ (Display History)</span>
             </button>
           </div>
         ) : (
@@ -551,14 +550,14 @@ export default function SalesDesk({
                 <h2 className="text-base font-bold text-slate-900">የቅርብ ጊዜ ሽያጮች እና ክፍያዎች</h2>
               </div>
 
-              {/* Disable / Close Button */}
+              {/* Close Button */}
               <button
                 type="button"
                 onClick={() => setShowHistory(false)}
                 className="text-xs font-semibold text-slate-500 hover:text-slate-800 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 <X className="w-3.5 h-3.5" />
-                <span>ታሪክ ዝጋ (Disable)</span>
+                <span>ታሪክ ዝጋ (Close)</span>
               </button>
             </div>
 
@@ -598,7 +597,7 @@ export default function SalesDesk({
                           </td>
                           <td className="py-3 px-4 text-slate-700">{x.customer_name || 'በቀጥታ ሽያጭ'}</td>
                           <td className="py-3 px-4 text-slate-700">
-                            {x.payment_method === 'cash' ? 'ጥሬ ገንዘብ' : x.payment_method === 'bank' ? 'የባንክ ዝውውር' : 'በዱቤ'}
+                            {x.payment_method === 'cash' ? 'ጥሬ ገንዘብ' : 'ባንክ / ዲጂታል'}
                           </td>
                           <td className="py-3 px-4 text-slate-500 font-mono text-xs">{x.sale_date}</td>
                           <td className="py-3 px-4 text-slate-700 font-semibold">
@@ -619,35 +618,28 @@ export default function SalesDesk({
 
               {/* 10-Item Pagination Controls for Product Sales */}
               {(productSales?.length || 0) > PAGE_SIZE && (
-                <div className="p-3 border-t border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-                  <span className="text-slate-500 font-medium">
-                    ከ <span className="font-bold text-slate-800">{productSales.length}</span> ሽያጮች ውስጥ{' '}
-                    <span className="font-bold text-slate-800">{(salesPage - 1) * PAGE_SIZE + 1}</span> -{' '}
-                    <span className="font-bold text-slate-800">{Math.min(salesPage * PAGE_SIZE, productSales.length)}</span> በማሳየት ላይ
-                  </span>
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      disabled={salesPage <= 1}
-                      onClick={() => setSalesPage((p) => Math.max(1, p - 1))}
-                      className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 font-semibold flex items-center gap-1 transition-colors cursor-pointer"
-                    >
-                      <ChevronLeft className="w-3.5 h-3.5" />
-                      <span>ቀዳሚ</span>
-                    </button>
-                    <div className="px-3 py-1 text-slate-700 font-mono font-bold text-xs bg-white rounded-lg border border-slate-200">
-                      ገጽ {salesPage} ከ {totalSalesPages}
-                    </div>
-                    <button
-                      type="button"
-                      disabled={salesPage >= totalSalesPages}
-                      onClick={() => setSalesPage((p) => Math.min(totalSalesPages, p + 1))}
-                      className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 font-semibold flex items-center gap-1 transition-colors cursor-pointer"
-                    >
-                      <span>ቀጣይ</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </button>
+                <div className="p-3 border-t border-slate-200 bg-slate-50/50 flex items-center justify-center gap-2 text-xs">
+                  <button
+                    type="button"
+                    disabled={salesPage <= 1}
+                    onClick={() => setSalesPage((p) => Math.max(1, p - 1))}
+                    className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                    <span>ቀዳሚ</span>
+                  </button>
+                  <div className="px-3 py-1 text-slate-700 font-mono font-bold text-xs bg-white rounded-lg border border-slate-200">
+                    ገጽ {salesPage} ከ {totalSalesPages}
                   </div>
+                  <button
+                    type="button"
+                    disabled={salesPage >= totalSalesPages}
+                    onClick={() => setSalesPage((p) => Math.min(totalSalesPages, p + 1))}
+                    className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                  >
+                    <span>ቀጣይ</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               )}
             </div>
@@ -699,35 +691,28 @@ export default function SalesDesk({
 
               {/* 10-Item Pagination Controls for Service Payments */}
               {(servicePayments?.length || 0) > PAGE_SIZE && (
-                <div className="p-3 border-t border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-                  <span className="text-slate-500 font-medium">
-                    ከ <span className="font-bold text-slate-800">{servicePayments.length}</span> ክፍያዎች ውስጥ{' '}
-                    <span className="font-bold text-slate-800">{(servicesPage - 1) * PAGE_SIZE + 1}</span> -{' '}
-                    <span className="font-bold text-slate-800">{Math.min(servicesPage * PAGE_SIZE, servicePayments.length)}</span> በማሳየት ላይ
-                  </span>
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      disabled={servicesPage <= 1}
-                      onClick={() => setServicesPage((p) => Math.max(1, p - 1))}
-                      className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 font-semibold flex items-center gap-1 transition-colors cursor-pointer"
-                    >
-                      <ChevronLeft className="w-3.5 h-3.5" />
-                      <span>ቀዳሚ</span>
-                    </button>
-                    <div className="px-3 py-1 text-slate-700 font-mono font-bold text-xs bg-white rounded-lg border border-slate-200">
-                      ገጽ {servicesPage} ከ {totalServicesPages}
-                    </div>
-                    <button
-                      type="button"
-                      disabled={servicesPage >= totalServicesPages}
-                      onClick={() => setServicesPage((p) => Math.min(totalServicesPages, p + 1))}
-                      className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 font-semibold flex items-center gap-1 transition-colors cursor-pointer"
-                    >
-                      <span>ቀጣይ</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </button>
+                <div className="p-3 border-t border-slate-200 bg-slate-50/50 flex items-center justify-center gap-2 text-xs">
+                  <button
+                    type="button"
+                    disabled={servicesPage <= 1}
+                    onClick={() => setServicesPage((p) => Math.max(1, p - 1))}
+                    className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                    <span>ቀዳሚ</span>
+                  </button>
+                  <div className="px-3 py-1 text-slate-700 font-mono font-bold text-xs bg-white rounded-lg border border-slate-200">
+                    ገጽ {servicesPage} ከ {totalServicesPages}
                   </div>
+                  <button
+                    type="button"
+                    disabled={servicesPage >= totalServicesPages}
+                    onClick={() => setServicesPage((p) => Math.min(totalServicesPages, p + 1))}
+                    className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                  >
+                    <span>ቀጣይ</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               )}
             </div>

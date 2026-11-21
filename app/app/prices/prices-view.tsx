@@ -5,9 +5,8 @@ import {
   Check,
   X,
   Edit2,
-  Search,
 } from 'lucide-react';
-import { updateProductPrice, updateProductThreshold } from './actions';
+import { updateProductPrice } from './actions';
 
 interface Product {
   id: string;
@@ -25,52 +24,47 @@ const money = (val: number) =>
   `ETB ${Number(val || 0).toLocaleString('en-KE', { maximumFractionDigits: 2 })}`;
 
 export default function PricesView({ initialProducts }: { initialProducts: Product[] }) {
-  const [search, setSearch] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editPrice, setEditPrice] = useState<string>('');
-  const [editThreshold, setEditThreshold] = useState<string>('');
   const [isPending, startTransition] = useTransition();
 
-  const filtered = useMemo(() => {
-    if (!search) return initialProducts;
-    const q = search.toLowerCase();
-    return initialProducts.filter(
-      (p) => p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q)
-    );
-  }, [initialProducts, search]);
+  // Cement is a raw material consumed in production and not sold, so it does not have a selling price.
+  const sellableProducts = useMemo(
+    () =>
+      initialProducts.filter(
+        (p) =>
+          p.category !== 'cement' &&
+          !p.name.toLowerCase().includes('cement') &&
+          !p.name.includes('ሲሚንቶ')
+      ),
+    [initialProducts]
+  );
+
+  const filtered = sellableProducts;
 
   const totalYardValuation = useMemo(
     () =>
-      initialProducts.reduce(
+      sellableProducts.reduce(
         (sum, p) => sum + Number(p.stock_on_hand) * Number(p.selling_price || 0),
         0
       ),
-    [initialProducts]
+    [sellableProducts]
   );
 
   const handleStartEdit = (product: Product) => {
     setEditingId(product.id);
     setEditPrice(String(product.selling_price ?? ''));
-    setEditThreshold(String(product.low_stock_threshold ?? ''));
   };
 
   const handleSave = (productId: string) => {
     startTransition(async () => {
       const priceNum = Number(editPrice);
-      const threshNum = Number(editThreshold);
 
       if (!isNaN(priceNum) && priceNum >= 0) {
         const fdPrice = new FormData();
         fdPrice.append('product_id', productId);
         fdPrice.append('selling_price', String(priceNum));
         await updateProductPrice(fdPrice);
-      }
-
-      if (!isNaN(threshNum) && threshNum >= 0) {
-        const fdThresh = new FormData();
-        fdThresh.append('product_id', productId);
-        fdThresh.append('low_stock_threshold', String(threshNum));
-        await updateProductThreshold(fdThresh);
       }
 
       setEditingId(null);
@@ -105,27 +99,6 @@ export default function PricesView({ initialProducts }: { initialProducts: Produ
         </div>
       </div>
 
-      {/* Search Filter */}
-      <div className="relative w-full">
-        <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-        <input
-          type="text"
-          className="erp-input pl-9 py-2 text-xs w-full"
-          placeholder="ምርቶችን ፈልግ..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        {search && (
-          <button
-            type="button"
-            onClick={() => setSearch('')}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        )}
-      </div>
-
       {/* =====================================================================
           MOBILE CARD VIEW (block sm:hidden)
       ===================================================================== */}
@@ -133,7 +106,6 @@ export default function PricesView({ initialProducts }: { initialProducts: Produ
         {filtered.map((p) => {
           const isEditing = editingId === p.id;
           const stockVal = Number(p.stock_on_hand) * Number(p.selling_price || 0);
-          const isLow = Number(p.stock_on_hand) <= Number(p.low_stock_threshold);
 
           return (
             <div key={p.id} className="erp-card p-4 space-y-3">
@@ -144,13 +116,7 @@ export default function PricesView({ initialProducts }: { initialProducts: Produ
                     {p.category} · Per {p.unit}
                   </span>
                 </div>
-                <span
-                  className={`text-xs font-mono font-bold px-2 py-0.5 rounded ${
-                    isLow
-                      ? 'bg-rose-50 text-rose-600 border border-rose-200'
-                      : 'bg-slate-100 text-slate-800'
-                  }`}
-                >
+                <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-lg bg-slate-100 text-slate-800">
                   {Number(p.stock_on_hand).toLocaleString()} {p.unit}
                 </span>
               </div>
@@ -213,21 +179,6 @@ export default function PricesView({ initialProducts }: { initialProducts: Produ
                     />
                   </div>
 
-                  <div>
-                    <label className="text-[11px] text-slate-600 font-semibold block mb-1">
-                      Low Stock Threshold
-                    </label>
-                    <input
-                      type="number"
-                      step="1"
-                      min="0"
-                      className="erp-input py-2 px-3 text-xs font-mono w-full"
-                      value={editThreshold}
-                      onChange={(e) => setEditThreshold(e.target.value)}
-                      placeholder="የማስጠንቀቂያ ደረጃ"
-                    />
-                  </div>
-
                   <div className="flex gap-2 pt-1">
                     <button
                       type="button"
@@ -270,14 +221,17 @@ export default function PricesView({ initialProducts }: { initialProducts: Produ
           <table className="w-full text-left text-xs sm:text-sm">
             <thead className="bg-slate-50 text-[11px] font-bold uppercase text-slate-500 border-b border-slate-200">
               <tr>
-                <th className="py-2.5 px-4">ምርት</th><th className="py-2.5 px-4">ያለ ክምችት</th><th className="py-2.5 px-4">የማስጠንቀቂያ ደረጃ</th><th className="py-2.5 px-4">የአንዱ ዋጋ</th><th className="py-2.5 px-4">የንብረት ዋጋ</th><th className="py-2.5 px-4 text-right">ድርጊት</th>
+                <th className="py-2.5 px-4">ምርት</th>
+                <th className="py-2.5 px-4">ያለ ክምችት</th>
+                <th className="py-2.5 px-4">የአንዱ ዋጋ</th>
+                <th className="py-2.5 px-4">የንብረት ዋጋ</th>
+                <th className="py-2.5 px-4 text-right">ድርጊት</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filtered.map((p) => {
                 const isEditing = editingId === p.id;
                 const stockVal = Number(p.stock_on_hand) * Number(p.selling_price || 0);
-                const isLow = Number(p.stock_on_hand) <= Number(p.low_stock_threshold);
 
                 return (
                   <tr key={p.id} className="hover:bg-slate-50/50">
@@ -287,24 +241,8 @@ export default function PricesView({ initialProducts }: { initialProducts: Produ
                         {p.category}
                       </span>
                     </td>
-                    <td className="py-3.5 px-4 font-mono font-semibold">
-                      <span className={isLow ? 'text-rose-600 font-bold' : 'text-slate-900'}>
-                        {Number(p.stock_on_hand).toLocaleString()} {p.unit}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4 font-mono">
-                      {isEditing ? (
-                        <input
-                          type="number"
-                          min="0"
-                          step="1"
-                          className="erp-input py-1 px-2 text-xs font-mono w-20"
-                          value={editThreshold}
-                          onChange={(e) => setEditThreshold(e.target.value)}
-                        />
-                      ) : (
-                        <span>{p.low_stock_threshold} {p.unit}</span>
-                      )}
+                    <td className="py-3.5 px-4 font-mono font-semibold text-slate-900">
+                      {Number(p.stock_on_hand).toLocaleString()} {p.unit}
                     </td>
                     <td className="py-3.5 px-4 font-mono font-bold text-slate-900">
                       {isEditing ? (

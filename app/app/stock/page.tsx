@@ -1,15 +1,8 @@
 import Image from 'next/image';
 import { db } from '@/lib/supabase/server';
 import StockActionsPanel from './stock-actions-panel';
-
-const localizeReason = (reason: string | null) => ({
-  'Used for 10/10 Block': 'ለ10/10 ብሎክ ተሰጥቷል',
-  'Used for 15/15 Block': 'ለ15/15 ብሎክ ተሰጥቷል',
-  'Used for 20/20 Block': 'ለ20/20 ብሎክ ተሰጥቷል',
-  'Used for Terrace': 'ለቴራሶ ተሰጥቷል',
-  'Other production use': 'ለሌላ የምርት ስራ ተሰጥቷል',
-}[reason || ''] || reason || '—');
-import { Warehouse, History } from 'lucide-react';
+import StockActivityHistory from './stock-activity-history';
+import { Warehouse } from 'lucide-react';
 
 const storeNames = [
   'Cement 50kg',
@@ -47,7 +40,7 @@ export default async function StockPage() {
       .from('inventory_movements')
       .select('id,product_id,quantity_delta,movement_type,reason,created_at')
       .order('created_at', { ascending: false })
-      .limit(50),
+      .limit(500),
   ]);
 
   if (itemsError) throw new Error(`Unable to read products: ${itemsError.message}`);
@@ -57,6 +50,7 @@ export default async function StockPage() {
   const cement = items?.find((i) => i.name === 'Cement 50kg');
   const cementQty = Number(cement?.stock_on_hand ?? 0);
   const names = new Map((items ?? []).map((i) => [i.id, i.name]));
+  const itemNames = Object.fromEntries((items ?? []).map((i) => [i.id, i.name]));
   const visibleMovements = (movements ?? []).filter((m) =>
     names.has(m.product_id)
   );
@@ -176,71 +170,8 @@ export default async function StockPage() {
         </div>
       </div>
 
-      {/* Movement History Table */}
-      <div className="erp-card overflow-hidden">
-        <div className="p-4 border-b border-slate-200 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <History className="w-4 h-4 text-slate-500" />
-            <h2 className="text-sm font-bold text-slate-900">የእንቅስቃሴ ታሪክ</h2>
-          </div>
-          <span className="text-xs text-slate-400 font-mono">{visibleMovements.length} መዝገቦች</span>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs sm:text-sm">
-            <thead className="bg-slate-50 text-[11px] font-bold uppercase text-slate-500 border-b border-slate-200">
-              <tr>
-                <th className="py-2.5 px-4">ቀን / ሰዓት</th><th className="py-2.5 px-4">እቃ</th><th className="py-2.5 px-4">ዓይነት</th><th className="py-2.5 px-4">ብዛት</th><th className="py-2.5 px-4">ምክንያት</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {visibleMovements.map((m) => {
-                const isNegative = Number(m.quantity_delta) < 0;
-                return (
-                  <tr key={m.id} className="hover:bg-slate-50/50">
-                    <td className="py-3 px-4 text-slate-500 text-xs font-mono">
-                      {new Date(m.created_at).toLocaleString('en-KE', {
-                        timeZone: 'Africa/Nairobi',
-                        dateStyle: 'short',
-                        timeStyle: 'short',
-                      })}
-                    </td>
-                    <td className="py-3 px-4 font-semibold text-slate-900">
-                      {names.get(m.product_id) ?? 'Item'}
-                    </td>
-                    <td className="py-3 px-4 capitalize">
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                          m.movement_type === 'receipt'
-                            ? 'bg-emerald-50 text-emerald-700'
-                            : m.movement_type === 'internal_use'
-                            ? 'bg-rose-50 text-rose-700'
-                            : 'bg-sky-50 text-sky-700'
-                        }`}
-                      >
-                        {m.movement_type.replace('_', ' ')}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 font-mono font-bold">
-                      <span className={isNegative ? 'text-rose-600' : 'text-emerald-600'}>
-                        {isNegative ? '' : '+'}
-                        {m.quantity_delta}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-slate-600">{localizeReason(m.reason)}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-
-          {visibleMovements.length === 0 && (
-            <div className="py-8 text-center text-xs text-slate-400">
-              No movements recorded yet.
-            </div>
-          )}
-        </div>
-      </div>
+      {/* Movement Activity History Table (Paginated 8 items at a time) */}
+      <StockActivityHistory movements={visibleMovements} itemNames={itemNames} />
     </div>
   );
 }

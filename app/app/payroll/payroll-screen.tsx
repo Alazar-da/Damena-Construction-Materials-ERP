@@ -1,6 +1,7 @@
 import { db } from '@/lib/supabase/server';
 import PayrollForm from './payroll-form';
-import { CalendarDays, History, Users, Wallet } from 'lucide-react';
+import PayrollHistory from './payroll-history';
+import { CalendarDays, Users, Wallet } from 'lucide-react';
 
 const money = (value: number) =>
   `${Number(value || 0).toLocaleString('en-KE', { maximumFractionDigits: 2 })} ብር`;
@@ -92,60 +93,7 @@ export default async function PayrollScreen() {
 
         {/* History Table */}
         <div>
-          <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-            <div className="flex items-center justify-between gap-4 border-b border-slate-200 p-5 sm:p-6">
-              <div className="flex items-center gap-2">
-                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-800"><History className="h-5 w-5" aria-hidden="true" /></span>
-                <div><h2 className="text-lg font-bold text-slate-950 sm:text-xl">የክፍያ ታሪክ</h2><p className="mt-0.5 text-sm text-slate-600">የቅርብ ጊዜ የተመዘገቡ ክፍያዎች</p></div>
-              </div>
-              <span className="shrink-0 rounded-full bg-slate-100 px-3 py-1.5 text-sm font-semibold text-slate-700">
-                {records?.length ?? 0} ክፍያ
-              </span>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs sm:text-sm">
-                <thead className="border-b border-slate-200 bg-slate-50 text-sm font-bold text-slate-700">
-                  <tr>
-                    <th className="px-4 py-3">ሰራተኛ</th>
-                    <th className="px-4 py-3">የክፍያ ጊዜ</th>
-                    <th className="px-4 py-3">መጠን</th>
-                    <th className="px-4 py-3">ቀን</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {records?.map((r) => (
-                    <tr key={r.id} className="transition-colors hover:bg-blue-50/50">
-                      <td className="px-4 py-4 font-semibold text-slate-950">
-                        {r.worker_name ?? 'ሰራተኛ'}
-                      </td>
-                      <td className="px-4 py-4 text-slate-700">
-                        {r.pay_type === 'daily'
-                          ? 'የቀን'
-                          : r.pay_type === 'weekly'
-                          ? 'የሳምንት'
-                          : 'የወር'}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-4 font-bold tabular-nums text-slate-950">
-                        {money(r.amount)}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-4 text-slate-600">
-                        {r.period_start}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              {(!records || records.length === 0) && (
-                <div className="flex flex-col items-center px-6 py-12 text-center">
-                  <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-500"><History className="h-6 w-6" aria-hidden="true" /></span>
-                  <p className="mt-4 text-base font-semibold text-slate-800">እስካሁን ክፍያ አልተመዘገበም</p>
-                  <p className="mt-1 text-sm text-slate-600">የመጀመሪያውን ክፍያ በግራ በኩል ያስገቡ</p>
-                </div>
-              )}
-            </div>
-          </div>
+          <PayrollHistory records={records ?? []} />
         </div>
       </div>
     </div>

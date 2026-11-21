@@ -236,7 +236,7 @@ export default function ProductionDesk({
               className="px-6 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold flex items-center gap-2 shadow-2xs transition-all hover:border-slate-300 hover:shadow-xs cursor-pointer"
             >
               <History className="w-4 h-4 text-emerald-600" />
-              <span>የምርት ታሪክ ይመልከቱ (View Production History)</span>
+              <span>የምርት ታሪክ አሳይ (Display History)</span>
             </button>
           </div>
         ) : (
@@ -248,14 +248,14 @@ export default function ProductionDesk({
                 <span className="text-[11px] text-slate-400 font-mono">({runs.length} batches)</span>
               </div>
 
-              {/* Disable / Close Button */}
+              {/* Close Button */}
               <button
                 type="button"
                 onClick={() => setShowHistory(false)}
-                className="text-xs font-semibold text-slate-500 hover:text-slate-800 px-3 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center gap-1.5 transition-colors cursor-pointer"
+                className="text-xs font-semibold text-slate-500 hover:text-slate-800 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 <X className="w-3.5 h-3.5" />
-                <span>ታሪክ ዝጋ (Disable)</span>
+                <span>ታሪክ ዝጋ (Close)</span>
               </button>
             </div>
 
@@ -304,35 +304,28 @@ export default function ProductionDesk({
 
             {/* 10-Item Pagination Controls */}
             {runs.length > PAGE_SIZE && (
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-100 text-xs">
-                <span className="text-slate-500 font-medium">
-                  ከ <span className="font-bold text-slate-800">{runs.length}</span> ባቾች ውስጥ{' '}
-                  <span className="font-bold text-slate-800">{(historyPage - 1) * PAGE_SIZE + 1}</span> -{' '}
-                  <span className="font-bold text-slate-800">{Math.min(historyPage * PAGE_SIZE, runs.length)}</span> በማሳየት ላይ
-                </span>
-                <div className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    disabled={historyPage <= 1}
-                    onClick={() => setHistoryPage((p) => Math.max(1, p - 1))}
-                    className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 font-semibold flex items-center gap-1 transition-colors cursor-pointer"
-                  >
-                    <ChevronLeft className="w-3.5 h-3.5" />
-                    <span>ቀዳሚ</span>
-                  </button>
-                  <div className="px-3 py-1 text-slate-700 font-mono font-bold text-xs bg-slate-50 rounded-lg border border-slate-200">
-                    ገጽ {historyPage} ከ {totalHistoryPages}
-                  </div>
-                  <button
-                    type="button"
-                    disabled={historyPage >= totalHistoryPages}
-                    onClick={() => setHistoryPage((p) => Math.min(totalHistoryPages, p + 1))}
-                    className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 font-semibold flex items-center gap-1 transition-colors cursor-pointer"
-                  >
-                    <span>ቀጣይ</span>
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </button>
+              <div className="flex items-center justify-center gap-2 pt-3 border-t border-slate-100 text-xs">
+                <button
+                  type="button"
+                  disabled={historyPage <= 1}
+                  onClick={() => setHistoryPage((p) => Math.max(1, p - 1))}
+                  className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                  <span>ቀዳሚ</span>
+                </button>
+                <div className="px-3 py-1 text-slate-700 font-mono font-bold text-xs bg-slate-50 rounded-lg border border-slate-200">
+                  ገጽ {historyPage} ከ {totalHistoryPages}
                 </div>
+                <button
+                  type="button"
+                  disabled={historyPage >= totalHistoryPages}
+                  onClick={() => setHistoryPage((p) => Math.min(totalHistoryPages, p + 1))}
+                  className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                >
+                  <span>ቀጣይ</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
               </div>
             )}
 
