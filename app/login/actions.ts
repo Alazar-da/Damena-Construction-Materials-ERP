@@ -13,7 +13,7 @@ export async function login(formData: FormData) {
     password,
   });
 
-  if (error) redirect('/login?error=credentials');
+  if (error) redirect('/?error=credentials');
 
   const isSuperAuth =
     data.user.app_metadata?.role === 'super_admin' ||
@@ -35,5 +35,5 @@ export async function login(formData: FormData) {
 export async function logout() {
   const client = await db();
   await client.auth.signOut();
-  redirect('/login');
+  redirect('/');
 }

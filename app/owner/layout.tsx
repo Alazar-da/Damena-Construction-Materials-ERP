@@ -8,7 +8,7 @@ export default async function OwnerLayout({ children }: { children: React.ReactN
     data: { user },
   } = await client.auth.getUser();
 
-  if (!user) redirect('/login');
+  if (!user) redirect('/');
 
   const { data: profile } = await client
     .from('profiles')

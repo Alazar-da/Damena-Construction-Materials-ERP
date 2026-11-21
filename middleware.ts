@@ -5,7 +5,13 @@ export async function middleware(request: NextRequest) {
   const isAppRoute = request.nextUrl.pathname.startsWith('/app');
   const isOwnerRoute = request.nextUrl.pathname.startsWith('/owner');
   const isProtectedRoute = isAppRoute || isOwnerRoute;
+  const isRootRoute = request.nextUrl.pathname === '/';
   const isLoginRoute = request.nextUrl.pathname === '/login';
+
+  // If visiting /login, redirect to /
+  if (isLoginRoute) {
+    return NextResponse.redirect(new URL('/', request.url));
+  }
 
   // Fast cookie check
   const allCookies = request.cookies.getAll();
@@ -13,9 +19,9 @@ export async function middleware(request: NextRequest) {
     (c) => c.name.includes('auth-token') || c.name.startsWith('sb-')
   );
 
-  // If trying to access /app with no auth cookie at all, redirect to /login immediately
+  // If trying to access protected route with no auth cookie at all, redirect to / immediately
   if (isProtectedRoute && !hasAuthCookie) {
-    return NextResponse.redirect(new URL('/login', request.url));
+    return NextResponse.redirect(new URL('/', request.url));
   }
 
   // Fast path for internal Next.js RSC transitions:
@@ -53,9 +59,9 @@ export async function middleware(request: NextRequest) {
   } = await client.auth.getUser();
 
   if (isProtectedRoute && !user) {
-    return NextResponse.redirect(new URL('/login', request.url));
+    return NextResponse.redirect(new URL('/', request.url));
   }
-  if (isLoginRoute && user && request.nextUrl.searchParams.get('setup') !== '1') {
+  if ((isRootRoute || isLoginRoute) && user && request.nextUrl.searchParams.get('setup') !== '1') {
     const isSuperAdmin =
       user.app_metadata?.role === 'super_admin' ||
       user.user_metadata?.role === 'super_admin';
@@ -76,5 +82,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/app/:path*', '/owner/:path*', '/login'],
+  matcher: ['/', '/app/:path*', '/owner/:path*', '/login'],
 };

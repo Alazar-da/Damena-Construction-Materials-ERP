@@ -358,21 +358,21 @@ function OwnerShellInner({ children, userEmail, displayName }: OwnerShellProps) 
             </Link>
           </div>
 
-          {/* PC-ONLY: Switch to Staff App Button */}
+          {/* Switch to Staff App Button */}
           <div className="flex items-center gap-2 md:max-xl:hidden">
             <Link
               href="/app"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+              className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">ተመለስ ወደ</span>
+              <span className="hidden sm:inline">ተመለስ ወደ </span>
               <span>የሰራተኞች መተግበሪያ</span>
             </Link>
           </div>
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 p-3.5 sm:p-6 lg:p-8 max-w-6xl w-full mx-auto pb-24 md:pb-8">
+        <main className="flex-1 p-3 sm:p-6 lg:p-8 max-w-6xl w-full mx-auto pb-24 md:pb-8">
           {children}
         </main>
       </div>

@@ -7,7 +7,7 @@ import { db } from '@/lib/supabase/server';
 export async function createAdmin(formData: FormData) {
   const client = await db();
   const { data: { user } } = await client.auth.getUser();
-  if (!user) redirect('/login');
+  if (!user) redirect('/');
 
   const { data: profile } = await client.from('profiles').select('role,is_active').eq('id', user.id).maybeSingle();
   if (profile?.role !== 'super_admin' || !profile.is_active) redirect('/app');
