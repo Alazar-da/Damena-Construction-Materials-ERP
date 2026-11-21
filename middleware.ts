@@ -38,15 +38,18 @@ export async function middleware(request: NextRequest) {
 
   // Full page loads & Login verification
   let response = NextResponse.next({ request });
-  const supabaseUrl =
+  const rawUrl =
     process.env.NEXT_PUBLIC_SUPABASE_URL ||
     process.env.SUPABASE_URL ||
     'https://placeholder.supabase.co';
-  const supabaseKey =
+  const rawKey =
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
     process.env.SUPABASE_PUBLISHABLE_KEY ||
     process.env.SUPABASE_ANON_KEY ||
     'placeholder-anon-key';
+
+  const supabaseUrl = rawUrl.trim().replace(/^['"]|['"]$/g, '');
+  const supabaseKey = rawKey.trim().replace(/^['"]|['"]$/g, '');
 
   const client = createServerClient(supabaseUrl, supabaseKey, {
     cookies: {

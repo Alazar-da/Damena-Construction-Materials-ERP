@@ -24,11 +24,15 @@ export async function login(formData: FormData) {
   });
 
   if (error) {
-    const msg = error.message?.toLowerCase() || '';
-    if (msg.includes('fetch') || msg.includes('network') || msg.includes('connection')) {
+    const msg = error.message || '';
+    const lower = msg.toLowerCase();
+    if (lower.includes('fetch') || lower.includes('network') || lower.includes('connection')) {
       redirect('/?error=connection');
     }
-    redirect('/?error=credentials');
+    if (lower.includes('invalid login credentials')) {
+      redirect('/?error=credentials');
+    }
+    redirect(`/?error=${encodeURIComponent(msg)}`);
   }
 
   const isSuperAuth =

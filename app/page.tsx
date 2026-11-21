@@ -45,12 +45,16 @@ export default function Home() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const err = params.get('error');
-    if (err === 'credentials') {
-      setError('የተሳሳተ ኢሜይል ወይም የይለፍ ቃል።');
-    } else if (err === 'missing_env') {
-      setError('የሲስተም ችግር፡ በ Vercel ላይ Supabase Environment Variables አልተዋቀሩም። እባክዎ በ Vercel Settings > Environment Variables ላይ NEXT_PUBLIC_SUPABASE_URL እና NEXT_PUBLIC_SUPABASE_ANON_KEY ያስገቡ።');
-    } else if (err === 'connection') {
-      setError('ከ Supabase ዳታቤዝ ጋር መገናኘት አልተቻለም። እባክዎ የ Vercel Environment Variables በትክክል መሞላታቸውን ያረጋግጡ።');
+    if (err) {
+      if (err === 'credentials' || err.toLowerCase().includes('invalid login credentials')) {
+        setError('የተሳሳተ ኢሜይል ወይም የይለፍ ቃል።');
+      } else if (err === 'missing_env') {
+        setError('የሲስተም ችግር፡ በ Vercel ላይ Supabase Environment Variables አልተዋቀሩም። እባክዎ በ Vercel Settings > Environment Variables ላይ NEXT_PUBLIC_SUPABASE_URL እና NEXT_PUBLIC_SUPABASE_ANON_KEY ያስገቡ።');
+      } else if (err === 'connection') {
+        setError('ከ Supabase ዳታቤዝ ጋር መገናኘት አልተቻለም። እባክዎ የ Vercel Environment Variables በትክክል መሞላታቸውን ያረጋግጡ።');
+      } else {
+        setError(`የመግባት ስህተት: ${decodeURIComponent(err)}`);
+      }
     }
     if (params.get('setup') === 'help') {
       setMode('forgot');
