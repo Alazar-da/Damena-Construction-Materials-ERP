@@ -4,6 +4,16 @@ import { redirect } from 'next/navigation';
 import { db } from '@/lib/supabase/server';
 
 export async function login(formData: FormData) {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+  const key =
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    process.env.SUPABASE_PUBLISHABLE_KEY ||
+    process.env.SUPABASE_ANON_KEY;
+
+  if (!url || !key || url.includes('placeholder.supabase.co')) {
+    redirect('/?error=missing_env');
+  }
+
   const client = await db();
   const email = String(formData.get('email') || '').trim();
   const password = String(formData.get('password') || '').trim();
@@ -13,7 +23,13 @@ export async function login(formData: FormData) {
     password,
   });
 
-  if (error) redirect('/?error=credentials');
+  if (error) {
+    const msg = error.message?.toLowerCase() || '';
+    if (msg.includes('fetch') || msg.includes('network') || msg.includes('connection')) {
+      redirect('/?error=connection');
+    }
+    redirect('/?error=credentials');
+  }
 
   const isSuperAuth =
     data.user.app_metadata?.role === 'super_admin' ||
