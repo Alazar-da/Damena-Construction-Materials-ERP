@@ -28,8 +28,8 @@ export default async function OwnerReportsPage({
     mode === 'daily'
       ? today
       : mode === 'weekly'
-      ? shiftDay(today, -6)
-      : `${today.slice(0, 7)}-01`;
+        ? shiftDay(today, -6)
+        : `${today.slice(0, 7)}-01`;
   let to = today;
 
   if (mode === 'custom') {
@@ -102,39 +102,95 @@ export default async function OwnerReportsPage({
       .limit(1000),
   ]);
 
+  const CERT_CONFIGS = [
+    { name: '10/10 ብሎክ', key: '10/10', minRate: 65, maxRate: 70, threshold: 65 },
+    { name: '15/15 ብሎክ', key: '15/15', minRate: 60, maxRate: 65, threshold: 60 },
+    { name: '20/20 ብሎክ', key: '20/20', minRate: 55, maxRate: 60, threshold: 55 },
+  ];
+
   const cementProductIds = (products ?? []).filter((product) => product.category === 'cement').map((product) => product.id);
-  const blockProductIds = new Set((products ?? [])
-    .filter((product) => product.category === 'brick' || /block|ብሎክ/i.test(product.name))
-    .map((product) => product.id));
   const { data: cementMovements } = cementProductIds.length
     ? await client.from('inventory_movements')
-        .select('created_at,quantity_delta,product_id')
-        .in('product_id', cementProductIds)
-        .eq('movement_type', 'internal_use')
-        .lt('quantity_delta', 0)
-        .gte('created_at', startTime)
-        .lte('created_at', endTime)
-        .limit(5000)
+      .select('created_at,quantity_delta,product_id,reason')
+      .in('product_id', cementProductIds)
+      .eq('movement_type', 'internal_use')
+      .lt('quantity_delta', 0)
+      .gte('created_at', startTime)
+      .lte('created_at', endTime)
+      .limit(5000)
     : { data: [] };
 
-  const dailyYield = new Map<string, { cement: number; blocks: number }>();
-  const localDay = (value: string) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Nairobi' }).format(new Date(value));
-  for (const movement of cementMovements ?? []) {
-    const day = localDay(movement.created_at);
-    const totals = dailyYield.get(day) ?? { cement: 0, blocks: 0 };
-    totals.cement += Math.abs(Number(movement.quantity_delta));
-    dailyYield.set(day, totals);
+  const localDay = (value: string) =>
+    new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Nairobi' }).format(new Date(value));
+
+  // Key: `${date}:${productKey}`
+  const dailyProductYield = new Map<
+    string,
+    { date: string; productKey: string; productName: string; cement: number; blocks: number }
+  >();
+
+  for (const m of cementMovements ?? []) {
+    const day = localDay(m.created_at);
+    const reason = (m.reason || '').toLowerCase();
+    for (const cfg of CERT_CONFIGS) {
+      if (reason.includes(cfg.key)) {
+        const k = `${day}:${cfg.key}`;
+        const existing = dailyProductYield.get(k) ?? {
+          date: day,
+          productKey: cfg.key,
+          productName: cfg.name,
+          cement: 0,
+          blocks: 0,
+        };
+        existing.cement += Math.abs(Number(m.quantity_delta));
+        dailyProductYield.set(k, existing);
+      }
+    }
   }
+
   for (const run of production ?? []) {
-    if (!blockProductIds.has(run.output_product_id)) continue;
-    const totals = dailyYield.get(run.production_date) ?? { cement: 0, blocks: 0 };
-    totals.blocks += Number(run.output_quantity);
-    dailyYield.set(run.production_date, totals);
+    const prod = (products ?? []).find((p) => p.id === run.output_product_id);
+    if (!prod) continue;
+    for (const cfg of CERT_CONFIGS) {
+      if (prod.name.includes(cfg.key)) {
+        const k = `${run.production_date}:${cfg.key}`;
+        const existing = dailyProductYield.get(k) ?? {
+          date: run.production_date,
+          productKey: cfg.key,
+          productName: cfg.name,
+          cement: 0,
+          blocks: 0,
+        };
+        existing.blocks += Number(run.output_quantity);
+        dailyProductYield.set(k, existing);
+      }
+    }
   }
-  const cementYieldChecks = Array.from(dailyYield, ([date, totals]) => ({ date, ...totals }))
-    .filter((day) => day.cement > 0)
-    .map((day) => ({ ...day, minimum: day.cement * 55, maximum: day.cement * 60,
-      flagged: day.blocks < day.cement * 55 || day.blocks > day.cement * 60 }))
+
+  const cementYieldChecks = Array.from(dailyProductYield.values())
+    .filter((d) => d.cement > 0 || d.blocks > 0)
+    .map((item) => {
+      const cfg = CERT_CONFIGS.find((c) => c.key === item.productKey)!;
+      const minExpected = item.cement * cfg.minRate;
+      const maxExpected = item.cement * cfg.maxRate;
+      const shortfall = minExpected - item.blocks;
+      const isFlagged = item.cement > 0 && shortfall >= cfg.threshold;
+      const explanation = isFlagged
+        ? `${shortfall} ብሎክ ጉድለት (ከ1 ከረጢት በላይ)`
+        : 'መደበኛ';
+
+      return {
+        date: item.date,
+        productName: item.productName,
+        productKey: item.productKey,
+        cement: item.cement,
+        blocks: item.blocks,
+        minimum: minExpected,
+        maximum: maxExpected,
+        flagged: isFlagged,
+        explanation,
+      };
+    })
     .sort((a, b) => b.date.localeCompare(a.date));
 
   return (
@@ -146,7 +202,6 @@ export default async function OwnerReportsPage({
       services={services ?? []}
       payroll={payroll ?? []}
       production={production ?? []}
-      products={products ?? []}
       audit={audit ?? []}
       cementYieldChecks={cementYieldChecks}
     />

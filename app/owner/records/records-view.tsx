@@ -9,6 +9,8 @@ import {
   Factory,
   Boxes,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   X,
   Check,
 } from 'lucide-react';
@@ -214,6 +216,8 @@ export default function OwnerRecords({
 }) {
   const [active, setActive] = useState<Category>('sales');
   const [query, setQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 10;
 
   const counts: Record<Category, number> = {
     sales: sales.length,
@@ -246,6 +250,29 @@ export default function OwnerRecords({
       ? visibleProduction.length
       : visibleMovements.length;
 
+  const totalPages = Math.max(1, Math.ceil(shown / PAGE_SIZE));
+
+  const pagedSales = useMemo(
+    () => visibleSales.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [visibleSales, page]
+  );
+  const pagedServices = useMemo(
+    () => visibleServices.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [visibleServices, page]
+  );
+  const pagedPayroll = useMemo(
+    () => visiblePayroll.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [visiblePayroll, page]
+  );
+  const pagedProduction = useMemo(
+    () => visibleProduction.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [visibleProduction, page]
+  );
+  const pagedMovements = useMemo(
+    () => visibleMovements.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [visibleMovements, page]
+  );
+
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Top Header */}
@@ -272,6 +299,7 @@ export default function OwnerRecords({
               onClick={() => {
                 setActive(key);
                 setQuery('');
+                setPage(1);
               }}
               className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer ${
                 isActive
@@ -301,12 +329,18 @@ export default function OwnerRecords({
           className="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-9 py-2 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-slate-900"
           placeholder={`${categories.find(([k]) => k === active)?.[1]} ፈልግ...`}
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setPage(1);
+          }}
         />
         {query && (
           <button
             type="button"
-            onClick={() => setQuery('')}
+            onClick={() => {
+              setQuery('');
+              setPage(1);
+            }}
             className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
           >
             <X className="w-3.5 h-3.5" />
@@ -318,7 +352,7 @@ export default function OwnerRecords({
       <div className="space-y-2.5">
         {/* SALES */}
         {active === 'sales' &&
-          visibleSales.map((s) => {
+          pagedSales.map((s) => {
             const line = s.sale_lines?.[0];
             const itemName = line?.item_name_snapshot || 'የምርት ሽያጭ';
             const itemQty = line ? `${line.quantity} ${line.unit_snapshot || 'pcs'}` : '';
@@ -410,7 +444,7 @@ export default function OwnerRecords({
                         name="payment_method"
                         defaultValue={s.payment_method || 'cash'}
                       >
-                        <option value="cash">ጥሬ ገንዘብ</option><option value="bank">ባንክ</option><option value="credit">ዱቤ</option>
+                        <option value="cash">ጥሬ ገንዘብ</option><option value="bank">ባንክ / ዲጂታል</option>
                       </select>
                     </FieldLabel>
 
@@ -440,7 +474,7 @@ export default function OwnerRecords({
 
         {/* SERVICES */}
         {active === 'services' &&
-          visibleServices.map((s) => (
+          pagedServices.map((s) => (
             <RecordCard
               key={s.id}
               type="አገልግሎት"
@@ -503,7 +537,7 @@ export default function OwnerRecords({
 
         {/* PAYROLL */}
         {active === 'payroll' &&
-          visiblePayroll.map((p) => (
+          pagedPayroll.map((p) => (
             <RecordCard
               key={p.id}
               type="Payroll"
@@ -582,7 +616,7 @@ export default function OwnerRecords({
 
         {/* PRODUCTION */}
         {active === 'production' &&
-          visibleProduction.map((r) => {
+          pagedProduction.map((r) => {
             const product = relation(r.products);
             return (
               <RecordCard
@@ -639,7 +673,7 @@ export default function OwnerRecords({
 
         {/* STOCK */}
         {active === 'stock' &&
-          visibleMovements.map((m) => {
+          pagedMovements.map((m) => {
             const product = relation(m.products);
             const isReceipt = m.movement_type === 'receipt';
             return (
@@ -690,6 +724,33 @@ export default function OwnerRecords({
           <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center">
             <p className="text-sm font-semibold text-slate-700">ምንም መዝገብ አልተገኘም</p>
             <p className="text-xs text-slate-400 mt-1">ሌላ ምድብ ይምረጡ ወይም ፍለጋውን ያጽዱ</p>
+          </div>
+        )}
+
+        {/* Pagination Bar */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 pt-4 border-t border-slate-200/80">
+            <button
+              type="button"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              <span>ቀዳሚ</span>
+            </button>
+            <span className="text-xs font-semibold font-mono text-slate-700 px-2">
+              ገጽ {page} ከ {totalPages}
+            </span>
+            <button
+              type="button"
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+            >
+              <span>ቀጣይ</span>
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
         )}
       </div>

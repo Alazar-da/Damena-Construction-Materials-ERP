@@ -12,5 +12,13 @@ export default async function OwnerPricesPage() {
     .eq('is_active', true)
     .order('name');
 
-  return <PricesView initialProducts={products ?? []} />;
+  // Cement is consumed internally in production and is not sold, so it does not have a selling price.
+  const sellableProducts = (products ?? []).filter(
+    (p) =>
+      p.category !== 'cement' &&
+      !p.name.toLowerCase().includes('cement') &&
+      !p.name.includes('ሲሚንቶ')
+  );
+
+  return <PricesView initialProducts={sellableProducts} />;
 }

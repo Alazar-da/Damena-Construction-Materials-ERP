@@ -5,9 +5,7 @@ import { db } from '@/lib/supabase/server';
 import {
   ArrowDownLeft,
   ArrowUpRight,
-  CheckCircle2,
   AlertTriangle,
-  Clock,
   Tag,
   ChartNoAxesCombined,
   Wrench,
@@ -43,7 +41,9 @@ const money = (n: number) =>
   })} ብር`;
 
 const imageFor = (name: string) =>
-  name.includes('10/10')
+  name.toLowerCase().includes('cement') || name.includes('ሲሚንቶ')
+    ? '/products/cement-50kg.png'
+    : name.includes('10/10')
     ? '/products/block-10-10.png'
     : name.includes('15/15')
     ? '/products/block-15-15.png'
@@ -52,7 +52,10 @@ const imageFor = (name: string) =>
     : '/products/terrace.png';
 
 const displayProductName = (name: string) =>
-  name.replace(/(\d+\s*\/\s*\d+)\s*Block/i, '$1 ብሎክ').replace(/Terrace/i, 'ቴራሶ');
+  name
+    .replace(/(\d+\s*\/\s*\d+)\s*Block/i, '$1 ብሎክ')
+    .replace(/Terrace/i, 'ቴራሶ')
+    .replace(/Cement\s*50kg/i, 'ሲሚንቶ (50kg)');
 
 interface ProductCertConfig {
   name: string;
@@ -155,7 +158,7 @@ export default async function OwnerPortal({
       .lt('created_at', `${nextDate}T00:00:00+03:00`),
   ]);
 
-  // 1. SIMPLE MONEY FLOW (PURE CASH ONLY - NO CREDIT)
+  // 1. SIMPLE MONEY FLOW (MONEY IN & OUT - NO CREDIT)
   const productSalesIncome = (sales ?? []).reduce(
     (sum, row) => sum + Number(row.paid_amount || row.total_amount),
     0
@@ -202,31 +205,23 @@ export default async function OwnerPortal({
     const isDayOngoing = isToday && currentHour < 18;
 
     let status: 'certified' | 'flagged' | 'in_progress' = 'certified';
-    let statusLabel = '✓ ተረጋግጧል (Certified)';
+    let statusLabel = 'ትክክል ✓';
     let explanation = '';
 
     if (isDayOngoing && shortfall > 0) {
       status = 'in_progress';
-      statusLabel = 'ፈረቃ በሂደት ላይ (In Progress)';
-      explanation = 'የቀኑ ሁለተኛ ፈረቃ ስራ ገና ስላላለቀ ሙሉ ቆጠራው በቀኑ መጨረሻ ላይ ተረጋግጦ ይቀርባል።';
+      statusLabel = 'ፈረቃ በሂደት ላይ';
+      explanation = 'ሁለተኛው ፈረቃ አልተጠናቀቀም።';
     } else if (shortfall >= config.threshold) {
       // Shortfall is >= 1 full cement output difference! (e.g. 10 bags used, only 550 produced)
       status = 'flagged';
-      statusLabel = '⚠ ልዩነት አለ (Flagged)';
-      explanation = `ጉድለቱ (${shortfall} ብሎክ) ከ1 ሙሉ ከረጢት ሲሚንቶ ምርት (${config.threshold}) በላይ ነው! የቆጠራ ስህተት ወይም የሲሚንቶ ብክነት ሊኖር ስለሚችል መጣራት አለበት።`;
-    } else if (blocksProduced > maxExpected + config.threshold) {
-      // Overcount by >= 1 full cement output! (someone might have counted twice)
-      status = 'flagged';
-      statusLabel = '⚠ የተጋነነ ቆጠራ (Overcount)';
-      explanation = `የተመዘገበው ምርት ከተጠበቀው በ${blocksProduced - maxExpected} ብሎክ ብልጫ አለው። በቆጠራ ወቅት በስህተት ሁለት ጊዜ ተቆጥሮ ሊሆን ይችላል።`;
+      statusLabel = 'ጉድለት አለ! ⚠';
+      explanation = `${shortfall} ብሎክ ጉድለት (ከ1 ከረጢት በላይ)። ይጣራ!`;
     } else {
-      // Within standard range OR dropped by less than 1 cement output (e.g. dropped by 30, 40, 50 blocks)
+      // Within standard range, dropped by less than 1 cement output (30, 40, 50 drop is normal), OR above the number (do not flag above)
       status = 'certified';
-      statusLabel = '✓ ተረጋግጧል (Certified)';
-      explanation =
-        shortfall > 0
-          ? `የተመዘገበው ቅናሽ (${shortfall} ብሎክ) ከ1 ከረጢት ምርት ያነሰ ስለሆነ እንደ መደበኛ የምርት ብክነት አልፏል።`
-          : `ምርቱ በትክክለኛ የፋብሪካው መመዘኛ (Recipe) መሰረት ተመርቶ ተረጋግጧል።`;
+      statusLabel = 'ትክክል ✓';
+      explanation = 'መደበኛ ምርት።';
     }
 
     return {
@@ -244,55 +239,77 @@ export default async function OwnerPortal({
     };
   }).filter(Boolean);
 
-  // Yard stock products for at-a-glance status
-  const yardProducts = (products ?? []).filter(
-    (p) => !['cement', 'service'].includes(p.category)
+  // Filter only flagged certifications (User: only show when there is a flag)
+  const flaggedCertifications = certifications.filter(
+    (item): item is NonNullable<typeof item> => item !== null && item.status === 'flagged'
   );
 
+  // Stock products for at-a-glance status (blocks, cement & terrace)
+  const sortRank = (name: string) => {
+    if (name.includes('10/10')) return 1;
+    if (name.includes('15/15')) return 2;
+    if (name.includes('20/20')) return 3;
+    if (name.toLowerCase().includes('cement') || name.includes('ሲሚንቶ')) return 4;
+    return 5;
+  };
+
+  const stockProducts = (products ?? [])
+    .filter((p) => p.category !== 'service')
+    .sort((a, b) => sortRank(a.name) - sortRank(b.name));
+
+  const cementProduct = stockProducts.find(
+    (p) =>
+      p.category === 'cement' ||
+      p.name.toLowerCase().includes('cement') ||
+      p.name.includes('ሲሚንቶ')
+  );
+  const finishedProducts = stockProducts.filter((p) => p !== cementProduct);
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* =========================================================================
-          1. HEADER ROW & SIMPLE PERIOD FILTER
+          1. HEADER ROW & RESPONSIVE PERIOD FILTER
       ========================================================================= */}
-      <div className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/90 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200/90 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-            <span className="text-xs font-mono text-slate-400 uppercase font-bold">
-              የፋብሪካው የስራ ሁኔታ · {today}
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span className="text-[11px] sm:text-xs font-mono text-slate-500 uppercase font-bold tracking-wider">
+              የቀጥታ ስራ ሁኔታ · {today}
             </span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight font-sans">
-            የባለቤት ዳሽቦርድ (Executive Overview)
+          <h1 className="text-xl sm:text-3xl font-black text-slate-900 tracking-tight font-sans">
+            የባለቤት አጠቃላይ እይታ
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            የደመነ ግንባታ እቃዎች ማምረቻ ዕለታዊ የገንዘብ እና የምርት ማረጋገጫ ማጠቃለያ
+            የደመነ ግንባታ እቃዎች ማምረቻ ዕለታዊ የገንዘብ ፍሰት እና የስራ እንቅስቃሴ
           </p>
         </div>
 
-        {/* Simple Filter: Today, Yesterday, Week, Month */}
+        {/* Responsive Segmented Filter: Full-width grid on mobile, compact on desktop */}
         <nav
           aria-label="Period selector"
-          className="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-2xl border border-slate-200 self-start md:self-center"
+          className="grid grid-cols-4 w-full md:w-auto bg-slate-100 p-1 sm:p-1.5 rounded-xl sm:rounded-2xl border border-slate-200/80 gap-1 shrink-0"
         >
           {[
-            { id: 'today', label: 'ዛሬ (Today)' },
-            { id: 'yesterday', label: 'ትናንት (Yesterday)' },
-            { id: 'weekly', label: 'ይህ ሳምንት (Week)' },
-            { id: 'monthly', label: 'ይህ ወር (Month)' },
+            { id: 'today', mobileLabel: 'ዛሬ', fullLabel: 'ዛሬ (Today)' },
+            { id: 'yesterday', mobileLabel: 'ትናንት', fullLabel: 'ትናንት (Yesterday)' },
+            { id: 'weekly', mobileLabel: 'ሳምንት', fullLabel: 'ይህ ሳምንት (Week)' },
+            { id: 'monthly', mobileLabel: 'ወር', fullLabel: 'ይህ ወር (Month)' },
           ].map((tab) => {
             const isActive = period === tab.id;
             return (
               <Link
                 key={tab.id}
                 href={`/owner?period=${tab.id}`}
-                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                className={`text-center py-2 px-1 sm:px-4 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                   isActive
                     ? 'bg-slate-900 text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
                 }`}
               >
-                {tab.label}
+                <span className="sm:hidden">{tab.mobileLabel}</span>
+                <span className="hidden sm:inline">{tab.fullLabel}</span>
               </Link>
             );
           })}
@@ -300,22 +317,65 @@ export default async function OwnerPortal({
       </div>
 
       {/* =========================================================================
-          2. SIMPLE MONEY FLOW (ONLY MONEY IN & MONEY OUT - NO NET CASH, NO CREDIT)
+          2. SIMPLE MONEY FLOW (ONLY MONEY IN & MONEY OUT)
       ========================================================================= */}
-      <div className="space-y-3">
+      <div className="space-y-2.5 sm:space-y-3">
         <div className="flex items-center justify-between px-1">
-          <h2 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+          <h2 className="text-xs sm:text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
             <span>💵 የገንዘብ ፍሰት (Money Flow)</span>
-            <span className="text-xs text-slate-400 font-normal font-mono">· {periodLabel}</span>
+            <span className="text-[11px] sm:text-xs text-slate-400 font-normal font-mono">· {periodLabel}</span>
           </h2>
-          <span className="text-xs font-mono font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-200">
-            ጥሬ ገንዘብ ብቻ (Cash Only)
-          </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+        {/* Mobile View: High-density Executive Finance Tiles (Side-by-side) */}
+        <div className="grid grid-cols-2 gap-2.5 sm:hidden">
+          {/* Mobile Money In */}
+          <div className="bg-gradient-to-br from-emerald-50/80 to-white rounded-2xl p-3.5 border border-emerald-200/90 shadow-2xs flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-black text-emerald-800 uppercase tracking-wider">
+                  የገባ ገቢ
+                </span>
+                <span className="w-6 h-6 rounded-lg bg-emerald-100/80 text-emerald-700 flex items-center justify-center">
+                  <ArrowDownLeft className="w-3.5 h-3.5" />
+                </span>
+              </div>
+              <div className="text-base xs:text-lg font-black font-mono text-emerald-600 tracking-tight leading-none">
+                +{money(totalMoneyIn)}
+              </div>
+            </div>
+            <div className="pt-2 mt-2 border-t border-emerald-100/80 text-[10px] font-mono text-slate-500 space-y-0.5">
+              <div className="truncate">ሽያጭ: <span className="font-semibold text-slate-700">{money(productSalesIncome)}</span></div>
+              <div className="truncate">አገልግሎት: <span className="font-semibold text-slate-700">{money(serviceIncome)}</span></div>
+            </div>
+          </div>
+
+          {/* Mobile Money Out */}
+          <div className="bg-gradient-to-br from-rose-50/80 to-white rounded-2xl p-3.5 border border-rose-200/90 shadow-2xs flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-black text-rose-800 uppercase tracking-wider">
+                  የወጣ ወጪ
+                </span>
+                <span className="w-6 h-6 rounded-lg bg-rose-100/80 text-rose-700 flex items-center justify-center">
+                  <ArrowUpRight className="w-3.5 h-3.5" />
+                </span>
+              </div>
+              <div className="text-base xs:text-lg font-black font-mono text-rose-600 tracking-tight leading-none">
+                -{money(totalMoneyOut)}
+              </div>
+            </div>
+            <div className="pt-2 mt-2 border-t border-rose-100/80 text-[10px] font-mono text-slate-500 space-y-0.5">
+              <div className="truncate">ደመወዝ: <span className="font-semibold text-slate-700">{money(totalPayrollExpenses)}</span></div>
+              <div className="truncate">ክፍያዎች: <span className="font-semibold text-slate-700">{payroll?.length ?? 0} ሰራተኞች</span></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop View: Full Spacious Cards */}
+        <div className="hidden sm:grid sm:grid-cols-2 gap-4 sm:gap-5">
           {/* 1. Total Money In */}
-          <div className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/90 shadow-xs flex flex-col justify-between">
+          <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-slate-200/90 shadow-xs flex flex-col justify-between">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                 ጠቅላላ የገባ ገቢ (Money In)
@@ -337,7 +397,7 @@ export default async function OwnerPortal({
           </div>
 
           {/* 2. Total Money Out */}
-          <div className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/90 shadow-xs flex flex-col justify-between">
+          <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-slate-200/90 shadow-xs flex flex-col justify-between">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                 የወጣ ወጪ (Money Out)
@@ -361,183 +421,181 @@ export default async function OwnerPortal({
       </div>
 
       {/* =========================================================================
-          3. PRODUCT CERTIFICATION SECTION (CEMENT VS OUTPUT VERIFICATION)
+          3. PRODUCT CERTIFICATION ALERT (ONLY SHOWN IN RED WHEN FLAGGED)
       ========================================================================= */}
-      <div className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/90 shadow-xs space-y-4">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-slate-100 pb-3">
-          <div>
+      {flaggedCertifications.length > 0 && (
+        <div className="bg-red-50 border-2 border-red-500 rounded-2xl p-5 sm:p-6 shadow-sm space-y-4">
+          <div className="flex items-center justify-between border-b border-red-200 pb-3">
             <div className="flex items-center gap-2">
-              <h2 className="text-base font-bold text-slate-900">
-                የእለቱ የምርት ማረጋገጫ (Product Certification)
+              <span className="w-3 h-3 rounded-full bg-red-600 animate-pulse"></span>
+              <h2 className="text-base sm:text-lg font-black text-red-950 flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-red-600 shrink-0" />
+                <span>የምርት ጉድለት ማስጠንቀቂያ (ከ1 ከረጢት በላይ ጉድለት)</span>
               </h2>
-              <span className="px-2.5 py-0.5 rounded-full bg-slate-900 text-white text-[11px] font-bold font-mono">
-                የቀኑ ሙሉ ድምር (Full-Day Shifts)
-              </span>
             </div>
-            <p className="text-xs text-slate-500 mt-1 max-w-3xl">
-              <strong>የአሰራር ህግ፦</strong> በቀን ውስጥ 2 ፈረቃዎች ስለሚኖሩ ማረጋገጫው የሚሰራው በቀኑ መጨረሻ ላይ ነው። የ1 ከረጢት ሙሉ ምርት ልዩነት ሲኖር ብቻ ያሳውቃል፤ ከ1 ከረጢት በታች የሆነ ቅናሽ (30፣ 40፣ 50 ብሎክ) መደበኛ ነው አይታገድም።
-            </p>
+            <span className="px-3 py-1 rounded-full bg-red-600 text-white text-xs font-black font-mono shadow-2xs">
+              {flaggedCertifications.length} ጉድለት ተገኝቷል
+            </span>
           </div>
-          <div className="text-left lg:text-right text-xs font-mono text-slate-500 bg-slate-50 p-2.5 rounded-xl border border-slate-200 shrink-0">
-            <div className="font-bold text-slate-800">የማሽኑ መመዘኛ (Yield Standards):</div>
-            <div>• 10/10 ብሎክ፦ <strong>65 - 70 pcs / ከረጢት</strong> (1 ከረጢት = 65)</div>
-            <div>• 15/15 ብሎክ፦ <strong>60 - 65 pcs / ከረጢት</strong> (1 ከረጢት = 60)</div>
-            <div>• 20/20 ብሎክ፦ <strong>55 - 60 pcs / ከረጢት</strong> (1 ከረጢት = 55)</div>
-          </div>
-        </div>
 
-        {/* Certification Cards Grid */}
-        {certifications.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {certifications.map((item) => {
-              if (!item) return null;
-              const isFlagged = item.status === 'flagged';
-              const isInProgress = item.status === 'in_progress';
-
-              return (
-                <div
-                  key={item.key}
-                  className={`p-4 rounded-2xl border-2 transition-all space-y-3 ${
-                    isFlagged
-                      ? 'border-rose-400 bg-rose-50/25 ring-2 ring-rose-500/10'
-                      : isInProgress
-                      ? 'border-blue-400 bg-blue-50/20'
-                      : 'border-emerald-500/30 bg-emerald-50/15'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 p-1 flex items-center justify-center shrink-0">
-                        <Image
-                          src={imageFor(item.name)}
-                          alt={item.name}
-                          width={32}
-                          height={32}
-                          className="max-h-8 w-auto object-contain"
-                        />
-                      </div>
-                      <div>
-                        <h3 className="font-extrabold text-sm text-slate-900">{item.name}</h3>
-                        <p className="text-[10px] text-slate-400 font-mono">
-                          1 ከረጢት = {item.minRate} - {item.maxRate} ብሎክ
-                        </p>
-                      </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {flaggedCertifications.map((item) => (
+              <div
+                key={item.key}
+                className="bg-white rounded-2xl border-2 border-red-500 p-4 space-y-3 shadow-2xs"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-10 h-10 rounded-xl bg-red-50 border border-red-200 p-1 flex items-center justify-center shrink-0">
+                      <Image
+                        src={imageFor(item.name)}
+                        alt={item.name}
+                        width={32}
+                        height={32}
+                        className="max-h-8 w-auto object-contain"
+                      />
                     </div>
+                    <div>
+                      <h3 className="font-black text-sm text-slate-900">{item.name}</h3>
+                      <p className="text-[10px] text-red-600 font-mono font-bold">
+                        1 ከረጢት = {item.minRate}-{item.maxRate} ብሎክ
+                      </p>
+                    </div>
+                  </div>
 
-                    <span
-                      className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 border ${
-                        isFlagged
-                          ? 'bg-rose-100 text-rose-800 border-rose-200'
-                          : isInProgress
-                          ? 'bg-blue-100 text-blue-800 border-blue-200'
-                          : 'bg-emerald-100 text-emerald-800 border-emerald-200'
-                      }`}
-                    >
-                      {item.statusLabel}
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-black bg-red-600 text-white flex items-center gap-1 shadow-2xs">
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    {item.statusLabel}
+                  </span>
+                </div>
+
+                {/* Numbers Grid */}
+                <div className="grid grid-cols-2 gap-2 p-3 rounded-xl border border-red-200 bg-red-50/50 text-xs">
+                  <div>
+                    <span className="text-slate-500 text-[10px] block font-semibold">የወጣ ሲሚንቶ</span>
+                    <span className="font-mono font-black text-sm text-slate-900">
+                      {item.cementBags} ከረጢት
                     </span>
                   </div>
-
-                  {/* Numbers Grid */}
-                  <div
-                    className={`grid grid-cols-2 gap-2 p-3 rounded-xl border text-xs bg-white ${
-                      isFlagged ? 'border-rose-200' : 'border-slate-100'
-                    }`}
-                  >
-                    <div>
-                      <span className="text-slate-400 text-[10px] block">የወጣ ሲሚንቶ</span>
-                      <span className="font-mono font-black text-sm text-slate-900">
-                        {item.cementBags} ከረጢት
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 text-[10px] block">የቀኑ ጠቅላላ ምርት</span>
-                      <span
-                        className={`font-mono font-black text-sm ${
-                          isFlagged ? 'text-rose-600' : 'text-emerald-600'
-                        }`}
-                      >
-                        {item.blocksProduced.toLocaleString()} ክፍሎች
-                      </span>
-                    </div>
+                  <div>
+                    <span className="text-slate-500 text-[10px] block font-semibold">የቀኑ ምርት</span>
+                    <span className="font-mono font-black text-sm text-red-600">
+                      {item.blocksProduced.toLocaleString()} ብሎክ
+                    </span>
                   </div>
+                </div>
 
-                  {/* Explanation Banner */}
-                  <div
-                    className={`p-2.5 rounded-lg border text-[11px] space-y-0.5 ${
-                      isFlagged
-                        ? 'bg-rose-100/70 border-rose-200 text-rose-900'
-                        : isInProgress
-                        ? 'bg-blue-50 border-blue-200 text-blue-900'
-                        : 'bg-emerald-50 border-emerald-200 text-emerald-900'
-                    }`}
-                  >
-                    <div className="font-bold flex items-center justify-between">
-                      <span>የሚጠበቀው፦ {item.minExpected} - {item.maxExpected} pcs</span>
-                      <span className="font-mono">
-                        {item.shortfall > 0
-                          ? `ቅናሽ፦ ${item.shortfall} ብሎክ`
-                          : `አማካይ፦ ${item.yieldPerBag}/ከረጢት`}
-                      </span>
-                    </div>
-                    <p className="text-[10px] opacity-90 leading-snug">{item.explanation}</p>
+                {/* Red Warning Banner - Short & Punchy */}
+                <div className="p-3 rounded-xl bg-red-600 text-white text-xs font-bold space-y-1 shadow-2xs">
+                  <div className="flex items-center justify-between text-[11px] text-red-100">
+                    <span>የሚጠበቀው፦ {item.minExpected} - {item.maxExpected}</span>
+                    <span className="font-mono font-black text-white">
+                      -{item.shortfall} ብሎክ ጉድለት
+                    </span>
                   </div>
+                  <div className="text-xs text-white font-black leading-snug">
+                    {item.explanation}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          4. SIMPLE STOCK AT A GLANCE (Blocks, Cement & Terrace)
+      ========================================================================= */}
+      <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs space-y-3">
+        <div className="pb-2 border-b border-slate-100 flex items-center justify-between">
+          <div>
+            <h2 className="text-xs sm:text-sm font-black text-slate-900">
+              በግቢው ያለ ክምችት (Stock at a Glance)
+            </h2>
+            <p className="text-[10px] sm:text-[11px] text-slate-400">የምርቶች እና የሲሚንቶ ክምችት መጠን</p>
+          </div>
+          <span className="text-[10px] sm:text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
+            {stockProducts.length} ዓይነቶች
+          </span>
+        </div>
+
+        {/* Mobile View: Cement hero raw material card + 2x2 grid for finished blocks */}
+        <div className="space-y-2.5 sm:hidden">
+          {/* Featured Cement Card (Hero Raw Material) */}
+          {cementProduct && (
+            <div className="p-3.5 rounded-xl border border-amber-200/90 bg-gradient-to-r from-amber-50/70 via-orange-50/40 to-white flex items-center justify-between shadow-2xs">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-white border border-amber-200/60 p-1 flex items-center justify-center shrink-0 shadow-2xs">
+                  <Image
+                    src={imageFor(cementProduct.name)}
+                    alt={cementProduct.name}
+                    width={40}
+                    height={40}
+                    className="max-h-10 w-auto object-contain"
+                  />
+                </div>
+                <div>
+                  <div className="text-xs font-black text-slate-900">
+                    {displayProductName(cementProduct.name)}
+                  </div>
+                  <div className="text-[10px] text-amber-700 font-semibold mt-0.5">
+                    የመጋዘን ጥሬ እቃ (Raw Material)
+                  </div>
+                </div>
+              </div>
+              <div className="text-right shrink-0">
+                <div className="text-lg font-black font-mono text-slate-900">
+                  {Number(cementProduct.stock_on_hand || 0).toLocaleString()}
+                </div>
+                <div className="text-[10px] text-slate-400 font-mono">ከረጢት (Bags)</div>
+              </div>
+            </div>
+          )}
+
+          {/* 4 Finished Products in a clean 2x2 grid (Vertical cards - NO SQUISHED TEXT!) */}
+          <div className="grid grid-cols-2 gap-2.5">
+            {finishedProducts.map((p) => {
+              const stock = Number(p.stock_on_hand || 0);
+              return (
+                <div
+                  key={p.id}
+                  className="p-3 rounded-xl border border-slate-200/80 bg-slate-50/50 flex flex-col items-center text-center shadow-2xs transition-colors"
+                >
+                  <div className="w-12 h-12 flex items-center justify-center mb-1.5">
+                    <Image
+                      src={imageFor(p.name)}
+                      alt={p.name}
+                      width={44}
+                      height={44}
+                      className="max-h-11 w-auto object-contain"
+                    />
+                  </div>
+                  <div className="text-xs font-black text-slate-900 truncate w-full">
+                    {displayProductName(p.name)}
+                  </div>
+                  <div className="text-base font-black font-mono text-slate-900 mt-0.5">
+                    {stock.toLocaleString()}
+                  </div>
+                  <div className="text-[10px] text-slate-400 font-mono">ክምችት (Stock)</div>
                 </div>
               );
             })}
           </div>
-        ) : (
-          <div className="py-8 text-center text-xs text-slate-400 font-medium">
-            በዚህ ጊዜ የተከናወነ ምርት ወይም የወጣ ሲሚንቶ የለም።
-          </div>
-        )}
-
-        {/* Footnote */}
-        <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-600 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-slate-500 shrink-0" />
-            <span>
-              <strong>ቀኑ በሂደት ላይ ሳለ (Mid-day):</strong> ሁለተኛው ፈረቃ ገና ስላላለቀ ቀድሞ ማንቂያ አይሰጥም (ባጅ፦ <em>"ፈረቃ በሂደት ላይ"</em> ተብሎ ይጠበቃል)።
-            </span>
-          </div>
-          <span className="text-[11px] text-slate-400 font-mono shrink-0">
-            * ሲሚንቶ ያልወጣለት ምርት አይታይም
-          </span>
-        </div>
-      </div>
-
-      {/* =========================================================================
-          4. SIMPLE YARD STOCK AT A GLANCE (Ready to Sell Stock in Yard)
-      ========================================================================= */}
-      <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-xs space-y-3">
-        <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-          <div>
-            <h2 className="text-sm font-bold text-slate-900">
-              በግቢው ያለ ክምችት (Yard Stock at a Glance)
-            </h2>
-            <p className="text-[11px] text-slate-400">አሁን ለመሸጥ ዝግጁ የሆኑ ምርቶች</p>
-          </div>
-          <Link
-            href="/app/stock"
-            className="text-xs font-semibold text-slate-600 hover:text-slate-900"
-          >
-            የመጋዘን ዝርዝር →
-          </Link>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {yardProducts.map((p) => {
+        {/* Desktop View: Full 5-column grid */}
+        <div className="hidden sm:grid sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          {stockProducts.map((p) => {
             const stock = Number(p.stock_on_hand || 0);
-            const threshold = Number(p.low_stock_threshold || 20);
-            const isLow = stock <= threshold;
+            const isCement =
+              p.category === 'cement' ||
+              p.name.toLowerCase().includes('cement') ||
+              p.name.includes('ሲሚንቶ');
 
             return (
               <div
                 key={p.id}
-                className={`p-3 rounded-xl border flex items-center gap-3 transition-colors ${
-                  isLow
-                    ? 'border-rose-200 bg-rose-50/30'
-                    : 'border-slate-200 bg-slate-50/60'
-                }`}
+                className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/60 flex items-center gap-3 transition-colors"
               >
                 <div className="w-12 h-12 flex items-center justify-center shrink-0">
                   <Image
@@ -548,23 +606,15 @@ export default async function OwnerPortal({
                     className="max-h-11 w-auto object-contain"
                   />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <div className="text-xs font-bold text-slate-900 truncate">
                     {displayProductName(p.name)}
                   </div>
-                  <div
-                    className={`text-base font-black font-mono ${
-                      isLow ? 'text-rose-600' : 'text-slate-900'
-                    }`}
-                  >
+                  <div className="text-lg font-black font-mono text-slate-900">
                     {stock.toLocaleString()}
                   </div>
-                  <div
-                    className={`text-[10px] font-bold ${
-                      isLow ? 'text-rose-700' : 'text-emerald-700'
-                    }`}
-                  >
-                    {isLow ? 'ዝቅተኛ ⚠' : 'በቂ ክምችት ✓'}
+                  <div className="text-[10px] text-slate-400 font-mono">
+                    {isCement ? 'ከረጢት (Bags)' : 'ክምችት (Stock)'}
                   </div>
                 </div>
               </div>
@@ -576,56 +626,56 @@ export default async function OwnerPortal({
       {/* =========================================================================
           5. QUICK OWNER SHORTCUTS
       ========================================================================= */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
         <Link
           href="/owner/prices"
-          className="p-3.5 rounded-2xl bg-white border border-slate-200/90 shadow-2xs hover:border-slate-300 transition-all flex items-center gap-3"
+          className="p-3 sm:p-3.5 rounded-2xl bg-white border border-slate-200/90 shadow-2xs hover:border-slate-300 active:scale-98 transition-all flex items-center gap-2.5 sm:gap-3"
         >
-          <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center shrink-0">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center shrink-0">
             <Tag className="w-4 h-4" />
           </div>
-          <div>
-            <div className="text-xs font-bold text-slate-900">የሽያጭ ዋጋዎች</div>
-            <div className="text-[10px] text-slate-400">ዋጋዎችን አስተካክል</div>
+          <div className="min-w-0">
+            <div className="text-xs font-black text-slate-900 truncate">የሽያጭ ዋጋዎች</div>
+            <div className="text-[10px] text-slate-400 truncate">ዋጋዎችን አስተካክል</div>
           </div>
         </Link>
 
         <Link
           href="/owner/reports"
-          className="p-3.5 rounded-2xl bg-white border border-slate-200/90 shadow-2xs hover:border-slate-300 transition-all flex items-center gap-3"
+          className="p-3 sm:p-3.5 rounded-2xl bg-white border border-slate-200/90 shadow-2xs hover:border-slate-300 active:scale-98 transition-all flex items-center gap-2.5 sm:gap-3"
         >
-          <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center shrink-0">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center shrink-0">
             <ChartNoAxesCombined className="w-4 h-4" />
           </div>
-          <div>
-            <div className="text-xs font-bold text-slate-900">ሙሉ ሪፖርቶች</div>
-            <div className="text-[10px] text-slate-400">የፋይናንስ ሪፖርት</div>
+          <div className="min-w-0">
+            <div className="text-xs font-black text-slate-900 truncate">ሙሉ ሪፖርቶች</div>
+            <div className="text-[10px] text-slate-400 truncate">የፋይናንስ ሪፖርት</div>
           </div>
         </Link>
 
         <Link
           href="/owner/machinery"
-          className="p-3.5 rounded-2xl bg-white border border-slate-200/90 shadow-2xs hover:border-slate-300 transition-all flex items-center gap-3"
+          className="p-3 sm:p-3.5 rounded-2xl bg-white border border-slate-200/90 shadow-2xs hover:border-slate-300 active:scale-98 transition-all flex items-center gap-2.5 sm:gap-3"
         >
-          <div className="w-9 h-9 rounded-xl bg-slate-100 text-slate-800 flex items-center justify-center shrink-0">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-100 text-slate-800 flex items-center justify-center shrink-0">
             <Wrench className="w-4 h-4" />
           </div>
-          <div>
-            <div className="text-xs font-bold text-slate-900">ማሽነሪዎች</div>
-            <div className="text-[10px] text-slate-400">የመሳሪያዎች ሁኔታ</div>
+          <div className="min-w-0">
+            <div className="text-xs font-black text-slate-900 truncate">ማሽነሪዎች</div>
+            <div className="text-[10px] text-slate-400 truncate">የመሳሪያዎች ሁኔታ</div>
           </div>
         </Link>
 
         <Link
           href="/owner/records"
-          className="p-3.5 rounded-2xl bg-white border border-slate-200/90 shadow-2xs hover:border-slate-300 transition-all flex items-center gap-3"
+          className="p-3 sm:p-3.5 rounded-2xl bg-white border border-slate-200/90 shadow-2xs hover:border-slate-300 active:scale-98 transition-all flex items-center gap-2.5 sm:gap-3"
         >
-          <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-800 flex items-center justify-center shrink-0">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-50 text-emerald-800 flex items-center justify-center shrink-0">
             <Users className="w-4 h-4" />
           </div>
-          <div>
-            <div className="text-xs font-bold text-slate-900">መዝገቦች</div>
-            <div className="text-[10px] text-slate-400">የስራ መዝገቦች</div>
+          <div className="min-w-0">
+            <div className="text-xs font-black text-slate-900 truncate">መዝገቦች</div>
+            <div className="text-[10px] text-slate-400 truncate">የስራ መዝገቦች</div>
           </div>
         </Link>
       </div>

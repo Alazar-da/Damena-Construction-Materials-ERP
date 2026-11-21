@@ -5,7 +5,6 @@ import {
   Check,
   X,
   Edit2,
-  Search,
 } from 'lucide-react';
 import { updateProductPrice, updateProductThreshold } from './actions';
 
@@ -25,27 +24,32 @@ const money = (val: number) =>
   `ETB ${Number(val || 0).toLocaleString('en-KE', { maximumFractionDigits: 2 })}`;
 
 export default function PricesView({ initialProducts }: { initialProducts: Product[] }) {
-  const [search, setSearch] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editPrice, setEditPrice] = useState<string>('');
   const [editThreshold, setEditThreshold] = useState<string>('');
   const [isPending, startTransition] = useTransition();
 
-  const filtered = useMemo(() => {
-    if (!search) return initialProducts;
-    const q = search.toLowerCase();
-    return initialProducts.filter(
-      (p) => p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q)
-    );
-  }, [initialProducts, search]);
+  // Cement is a raw material consumed in production and not sold, so it does not have a selling price.
+  const sellableProducts = useMemo(
+    () =>
+      initialProducts.filter(
+        (p) =>
+          p.category !== 'cement' &&
+          !p.name.toLowerCase().includes('cement') &&
+          !p.name.includes('ሲሚንቶ')
+      ),
+    [initialProducts]
+  );
+
+  const filtered = sellableProducts;
 
   const totalYardValuation = useMemo(
     () =>
-      initialProducts.reduce(
+      sellableProducts.reduce(
         (sum, p) => sum + Number(p.stock_on_hand) * Number(p.selling_price || 0),
         0
       ),
-    [initialProducts]
+    [sellableProducts]
   );
 
   const handleStartEdit = (product: Product) => {
@@ -104,27 +108,6 @@ export default function PricesView({ initialProducts }: { initialProducts: Produ
         </div>
       </div>
 
-      {/* Search */}
-      <div className="relative w-full">
-        <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-        <input
-          type="text"
-          className="erp-input pl-9 py-2 text-xs w-full"
-          placeholder="ምርቶችን ፈልግ..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        {search && (
-          <button
-            type="button"
-            onClick={() => setSearch('')}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        )}
-      </div>
-
       {/* =====================================================================
           MOBILE CARD VIEW (block sm:hidden)
       ===================================================================== */}
@@ -144,11 +127,10 @@ export default function PricesView({ initialProducts }: { initialProducts: Produ
                   </span>
                 </div>
                 <span
-                  className={`text-xs font-mono font-bold px-2 py-0.5 rounded ${
-                    isLow
-                      ? 'bg-rose-50 text-rose-600 border border-rose-200'
-                      : 'bg-slate-100 text-slate-800'
-                  }`}
+                  className={`text-xs font-mono font-bold px-2 py-0.5 rounded ${isLow
+                    ? 'bg-rose-50 text-rose-600 border border-rose-200'
+                    : 'bg-slate-100 text-slate-800'
+                    }`}
                 >
                   {Number(p.stock_on_hand).toLocaleString()} {p.unit}
                 </span>
