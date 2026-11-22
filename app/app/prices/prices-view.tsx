@@ -6,7 +6,7 @@ import {
   X,
   Edit2,
 } from 'lucide-react';
-import { updateProductPrice } from './actions';
+import { updateProductPrice, updateProductThreshold } from './actions';
 
 interface Product {
   id: string;
@@ -26,6 +26,7 @@ const money = (val: number) =>
 export default function PricesView({ initialProducts }: { initialProducts: Product[] }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editPrice, setEditPrice] = useState<string>('');
+  const [editThreshold, setEditThreshold] = useState<string>('');
   const [isPending, startTransition] = useTransition();
 
   // Cement is a raw material consumed in production and not sold, so it does not have a selling price.
@@ -54,17 +55,26 @@ export default function PricesView({ initialProducts }: { initialProducts: Produ
   const handleStartEdit = (product: Product) => {
     setEditingId(product.id);
     setEditPrice(String(product.selling_price ?? ''));
+    setEditThreshold(String(product.low_stock_threshold ?? ''));
   };
 
   const handleSave = (productId: string) => {
     startTransition(async () => {
       const priceNum = Number(editPrice);
+      const threshNum = Number(editThreshold);
 
       if (!isNaN(priceNum) && priceNum >= 0) {
         const fdPrice = new FormData();
         fdPrice.append('product_id', productId);
         fdPrice.append('selling_price', String(priceNum));
         await updateProductPrice(fdPrice);
+      }
+
+      if (!isNaN(threshNum) && threshNum >= 0) {
+        const fdThresh = new FormData();
+        fdThresh.append('product_id', productId);
+        fdThresh.append('low_stock_threshold', String(threshNum));
+        await updateProductThreshold(fdThresh);
       }
 
       setEditingId(null);
@@ -79,18 +89,17 @@ export default function PricesView({ initialProducts }: { initialProducts: Produ
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Top Header */}
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-slate-900 leading-tight">
-            Product Prices
+            የምርት መሸጫ ዋጋዎች
           </h1>
           <p className="text-[11px] sm:text-xs text-slate-500 font-mono mt-0.5">
-            {initialProducts.length} items in catalog
+            {initialProducts.length} እቃዎች በካታሎግ ውስጥ
           </p>
         </div>
 
-        {/* Total Stock Asset Value Card */}
         <div className="erp-card px-3.5 py-2.5 flex items-center justify-between sm:justify-end gap-3">
           <span className="text-xs text-slate-500 font-semibold">ጠቅላላ የክምችት ዋጋ፦</span>
           <span className="font-mono font-bold text-slate-900 text-sm sm:text-base">
@@ -106,6 +115,7 @@ export default function PricesView({ initialProducts }: { initialProducts: Produ
         {filtered.map((p) => {
           const isEditing = editingId === p.id;
           const stockVal = Number(p.stock_on_hand) * Number(p.selling_price || 0);
+          const isLow = Number(p.stock_on_hand) <= Number(p.low_stock_threshold);
 
           return (
             <div key={p.id} className="erp-card p-4 space-y-3">
@@ -113,12 +123,19 @@ export default function PricesView({ initialProducts }: { initialProducts: Produ
                 <div>
                   <h2 className="text-sm font-bold text-slate-900">{p.name}</h2>
                   <span className="text-[10px] text-slate-400 font-mono uppercase">
-                    {p.category} · Per {p.unit}
+                    {p.category} · በ{p.unit}
                   </span>
                 </div>
-                <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-lg bg-slate-100 text-slate-800">
-                  {Number(p.stock_on_hand).toLocaleString()} {p.unit}
-                </span>
+                <div className="flex flex-col items-end gap-1">
+                  <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-lg bg-slate-100 text-slate-800">
+                    {Number(p.stock_on_hand).toLocaleString()} {p.unit}
+                  </span>
+                  {isLow && (
+                    <span className="text-[10px] font-semibold text-rose-600 bg-rose-50 px-2 py-0.5 rounded">
+                      ክምችት አናሳ ነው!
+                    </span>
+                  )}
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-2 text-xs font-mono pt-2 border-t border-slate-100">
@@ -141,7 +158,7 @@ export default function PricesView({ initialProducts }: { initialProducts: Produ
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <label className="text-[11px] text-slate-600 font-semibold">
-                        Unit Price (ETB)
+                        የአንዱ ዋጋ (ብር)
                       </label>
                       <div className="flex gap-1">
                         <button
@@ -179,6 +196,20 @@ export default function PricesView({ initialProducts }: { initialProducts: Produ
                     />
                   </div>
 
+                  <div>
+                    <label className="text-[11px] text-slate-600 font-semibold block mb-1">
+                      የማስጠንቀቂያ ዝቅተኛ መጠን ({p.unit})
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      className="erp-input py-2 px-3 text-sm font-mono font-bold w-full"
+                      value={editThreshold}
+                      onChange={(e) => setEditThreshold(e.target.value)}
+                      placeholder="0"
+                    />
+                  </div>
+
                   <div className="flex gap-2 pt-1">
                     <button
                       type="button"
@@ -194,7 +225,7 @@ export default function PricesView({ initialProducts }: { initialProducts: Produ
                       onClick={() => setEditingId(null)}
                       className="erp-btn-secondary py-2 px-3 text-xs cursor-pointer"
                     >
-                      Cancel
+                      ሰርዝ
                     </button>
                   </div>
                 </div>
@@ -205,7 +236,7 @@ export default function PricesView({ initialProducts }: { initialProducts: Produ
                   className="erp-btn-secondary w-full py-2 text-xs font-semibold cursor-pointer inline-flex items-center justify-center gap-1.5"
                 >
                   <Edit2 className="w-3.5 h-3.5 text-slate-400" />
-                  <span>ዋጋውን አዘምን</span>
+                  <span>ዋጋውን / መጠኑን አዘምን</span>
                 </button>
               )}
             </div>
@@ -224,6 +255,7 @@ export default function PricesView({ initialProducts }: { initialProducts: Produ
                 <th className="py-2.5 px-4">ምርት</th>
                 <th className="py-2.5 px-4">ያለ ክምችት</th>
                 <th className="py-2.5 px-4">የአንዱ ዋጋ</th>
+                <th className="py-2.5 px-4">የማስጠንቀቂያ መጠን</th>
                 <th className="py-2.5 px-4">የንብረት ዋጋ</th>
                 <th className="py-2.5 px-4 text-right">ድርጊት</th>
               </tr>
@@ -232,6 +264,7 @@ export default function PricesView({ initialProducts }: { initialProducts: Produ
               {filtered.map((p) => {
                 const isEditing = editingId === p.id;
                 const stockVal = Number(p.stock_on_hand) * Number(p.selling_price || 0);
+                const isLow = Number(p.stock_on_hand) <= Number(p.low_stock_threshold);
 
                 return (
                   <tr key={p.id} className="hover:bg-slate-50/50">
@@ -242,7 +275,12 @@ export default function PricesView({ initialProducts }: { initialProducts: Produ
                       </span>
                     </td>
                     <td className="py-3.5 px-4 font-mono font-semibold text-slate-900">
-                      {Number(p.stock_on_hand).toLocaleString()} {p.unit}
+                      <span>{Number(p.stock_on_hand).toLocaleString()} {p.unit}</span>
+                      {isLow && (
+                        <span className="ml-2 text-[10px] font-semibold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded">
+                          አናሳ
+                        </span>
+                      )}
                     </td>
                     <td className="py-3.5 px-4 font-mono font-bold text-slate-900">
                       {isEditing ? (
@@ -257,6 +295,19 @@ export default function PricesView({ initialProducts }: { initialProducts: Produ
                         />
                       ) : (
                         <span>{p.selling_price ? money(p.selling_price) : '—'}</span>
+                      )}
+                    </td>
+                    <td className="py-3.5 px-4 font-mono text-slate-600">
+                      {isEditing ? (
+                        <input
+                          type="number"
+                          min="0"
+                          className="erp-input py-1 px-2 text-xs font-mono w-20"
+                          value={editThreshold}
+                          onChange={(e) => setEditThreshold(e.target.value)}
+                        />
+                      ) : (
+                        <span>{Number(p.low_stock_threshold || 0).toLocaleString()} {p.unit}</span>
                       )}
                     </td>
                     <td className="py-3.5 px-4 font-mono font-semibold text-slate-700">

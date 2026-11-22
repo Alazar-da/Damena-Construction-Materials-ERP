@@ -73,6 +73,7 @@ type AuditEntry = {
 };
 
 interface ReportsViewProps {
+  basePath?: string;
   mode: string;
   from: string;
   to: string;
@@ -135,6 +136,7 @@ const showValue = (key: string, value: unknown) =>
     : String(value);
 
 export default function ReportsView({
+  basePath = '/owner/reports',
   mode,
   from,
   to,
@@ -200,7 +202,7 @@ export default function ReportsView({
       setDailyPage(1);
       setSalesPage(1);
       setAuditPage(1);
-      router.push(`/owner/reports?period=${newMode}`);
+      router.push(`${basePath}?period=${newMode}`);
     }
   };
 
@@ -209,7 +211,7 @@ export default function ReportsView({
     setDailyPage(1);
     setSalesPage(1);
     setAuditPage(1);
-    router.push(`/owner/reports?period=custom&from=${fromDate}&to=${toDate}`);
+    router.push(`${basePath}?period=custom&from=${fromDate}&to=${toDate}`);
   };
 
   return (

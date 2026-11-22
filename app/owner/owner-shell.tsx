@@ -372,45 +372,10 @@ function OwnerShellInner({ children, userEmail, displayName }: OwnerShellProps) 
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 p-3 sm:p-6 lg:p-8 max-w-6xl w-full mx-auto pb-24 md:pb-8">
+        <main className="flex-1 p-3 sm:p-6 lg:p-8 max-w-6xl w-full mx-auto pb-8">
           {children}
         </main>
       </div>
-
-      {/* =========================================================================
-          MOBILE OWNER BOTTOM NAVIGATION BAR
-      ========================================================================= */}
-      <nav
-        aria-label="የባለቤት ሞባይል አሰሳ"
-        className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur border-t border-slate-200 md:hidden flex items-center justify-around px-2 py-1.5 shadow-lg shadow-black/5"
-      >
-        {ownerNavItems.map((item) => {
-          const Icon = item.icon;
-          const isActive =
-            item.href === '/owner'
-              ? pathname === '/owner'
-              : pathname.startsWith(item.href);
-
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex flex-col items-center justify-center flex-1 py-1 px-1 rounded-lg transition-colors cursor-pointer ${isActive ? 'text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-700'
-                }`}
-            >
-              <div className="relative">
-                <Icon className={`w-5 h-5 ${isActive ? 'text-slate-950' : 'text-slate-400'}`} />
-                {isActive && (
-                  <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-slate-950" />
-                )}
-              </div>
-              <span className="text-xs mt-1 tracking-tight leading-tight font-medium truncate">
-                {item.mobileLabel || item.label}
-              </span>
-            </Link>
-          );
-        })}
-      </nav>
     </div>
   );
 }

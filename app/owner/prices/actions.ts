@@ -20,6 +20,8 @@ export async function updateProductPrice(formData: FormData) {
 
   revalidatePath('/owner/prices');
   revalidatePath('/owner');
+  revalidatePath('/app');
+  revalidatePath('/app/prices');
   revalidatePath('/app/sales');
 }
 
@@ -41,5 +43,7 @@ export async function updateProductThreshold(formData: FormData) {
 
   revalidatePath('/owner/prices');
   revalidatePath('/owner');
+  revalidatePath('/app');
+  revalidatePath('/app/prices');
   revalidatePath('/app/stock');
 }

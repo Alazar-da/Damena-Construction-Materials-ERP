@@ -22,6 +22,8 @@ import {
   UserRound,
   Wrench,
   Bell,
+  Tag,
+  ChartNoAxesCombined,
 } from 'lucide-react';
 import { logout } from '@/app/login/actions';
 import { HeaderSlotProvider, useHeaderSlot } from '@/components/header-slot-context';
@@ -34,11 +36,13 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { href: '/app', label: 'ዛሬ', mobileLabel: 'ዛሬ', icon: LayoutDashboard },
+  { href: '/app', label: 'አጠቃላይ እይታ', mobileLabel: 'አጠቃላይ', icon: LayoutDashboard },
   { href: '/app/stock', label: 'የሲሚንቶ መጋዘን', mobileLabel: 'ሲሚንቶ', icon: Boxes },
   { href: '/app/production', label: 'ምርት', mobileLabel: 'ምርት', icon: Factory },
   { href: '/app/sales', label: 'ሽያጭ', mobileLabel: 'ሽያጭ', icon: ShoppingCart },
   { href: '/app/payroll', label: 'የደመወዝ ክፍያ', mobileLabel: 'ደመወዝ', icon: WalletCards },
+  { href: '/app/prices', label: 'ዋጋዎች', mobileLabel: 'ዋጋ', icon: Tag },
+  { href: '/app/reports', label: 'ሪፖርቶች', mobileLabel: 'ሪፖርት', icon: ChartNoAxesCombined },
   { href: '/app/machinery', label: 'ማሽነሪ', mobileLabel: 'ማሽነሪ', icon: Wrench },
 ];
 
@@ -515,61 +519,10 @@ function AppShellInner({
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 p-3.5 sm:p-6 lg:p-8 max-w-6xl w-full mx-auto pb-24 md:pb-8">
+        <main className="flex-1 p-3.5 sm:p-6 lg:p-8 max-w-6xl w-full mx-auto pb-8">
           {children}
         </main>
       </div>
-
-      {/* =========================================================================
-          MOBILE BOTTOM NAVIGATION BAR - STAFF OPERATIONS + OPTIONAL OWNER TAB
-      ========================================================================= */}
-      <nav
-        aria-label="የሞባይል አሰሳ"
-        className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur border-t border-slate-200 md:hidden flex items-center justify-around px-1 py-1.5 shadow-lg shadow-black/5"
-      >
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive =
-            item.href === '/app'
-              ? pathname === '/app'
-              : pathname.startsWith(item.href);
-
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => {
-                if (pathname !== item.href) setNavigating(true);
-              }}
-              className={`flex flex-col items-center justify-center flex-1 py-1 px-0.5 rounded-lg transition-colors cursor-pointer ${isActive ? 'text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-700'
-                }`}
-            >
-              <div className="relative">
-                <Icon className={`w-5 h-5 ${isActive ? 'text-slate-950' : 'text-slate-400'}`} />
-                {isActive && (
-                  <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-slate-950" />
-                )}
-              </div>
-              <span className="text-xs mt-1 tracking-tight leading-tight">
-                {item.mobileLabel}
-              </span>
-            </Link>
-          );
-        })}
-
-        {/* Owner Portal switch on mobile (visible for Super Admin) */}
-        {isSuperAdmin && (
-          <Link
-            href="/owner"
-            className="flex flex-col items-center justify-center flex-1 py-1 px-0.5 rounded-lg text-emerald-600 hover:text-emerald-700 transition-colors cursor-pointer"
-          >
-            <TrendingUp className="w-5 h-5 text-emerald-600" />
-            <span className="text-[10px] mt-0.5 tracking-tight leading-none font-semibold">
-              Owner
-            </span>
-          </Link>
-        )}
-      </nav>
     </div>
   );
 }

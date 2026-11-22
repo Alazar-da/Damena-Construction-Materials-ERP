@@ -27,9 +27,11 @@ export async function updateProductPrice(formData: FormData) {
     if (tableError) throw new Error(tableError.message);
   }
 
+  revalidatePath('/app');
   revalidatePath('/app/prices');
-  revalidatePath('/app/owner');
   revalidatePath('/app/sales');
+  revalidatePath('/owner');
+  revalidatePath('/owner/prices');
 }
 
 export async function updateProductThreshold(formData: FormData) {
@@ -48,7 +50,9 @@ export async function updateProductThreshold(formData: FormData) {
 
   if (error) throw new Error(error.message);
 
+  revalidatePath('/app');
   revalidatePath('/app/prices');
-  revalidatePath('/app/owner');
   revalidatePath('/app/stock');
+  revalidatePath('/owner');
+  revalidatePath('/owner/prices');
 }
