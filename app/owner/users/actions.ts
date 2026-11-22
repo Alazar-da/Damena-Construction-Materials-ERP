@@ -64,10 +64,22 @@ export async function createAdmin(formData: FormData) {
     restoredExisting = true;
   }
 
-  const { error: profileError } = await client.rpc('owner_assign_admin_profile', {
-    p_user_id: accountId!,
-    p_display_name: displayName || email.split('@')[0],
+  // Upsert profile with the exact chosen role ('manager' or 'admin')
+  const { error: profileError } = await admin.from('profiles').upsert({
+    id: accountId!,
+    display_name: displayName || email.split('@')[0],
+    role: validRole,
+    is_active: true,
   });
-  if (profileError) redirect(`/owner/users?error=${encodeURIComponent(profileError.message)}`);
+
+  if (profileError) {
+    // Fallback to RPC if direct upsert had an issue
+    const { error: rpcError } = await client.rpc('owner_assign_admin_profile', {
+      p_user_id: accountId!,
+      p_display_name: displayName || email.split('@')[0],
+    });
+    if (rpcError) redirect(`/owner/users?error=${encodeURIComponent(rpcError.message)}`);
+  }
+
   redirect(`/owner/users?success=${encodeURIComponent(restoredExisting ? 'የነበረው መለያ የይለፍ ቃል ተቀይሮ ተስተካክሏል።' : validRole === 'manager' ? 'የስራ አስኪያጅ መለያ በተሳካ ሁኔታ ተፈጥሯል!' : 'የአስተዳዳሪ መለያ በተሳካ ሁኔታ ተፈጥሯል!')}`);
 }
