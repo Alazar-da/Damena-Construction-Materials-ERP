@@ -17,7 +17,6 @@ export async function login(formData: FormData) {
   const client = await db();
   const email = String(formData.get('email') || '').trim();
   const password = String(formData.get('password') || '').trim();
-  const selectedPortal = String(formData.get('portal') || '').toLowerCase();
 
   const { data, error } = await client.auth.signInWithPassword({
     email,
@@ -27,14 +26,13 @@ export async function login(formData: FormData) {
   if (error) {
     const msg = error.message || '';
     const lower = msg.toLowerCase();
-    const portalQuery = selectedPortal ? `&portal=${encodeURIComponent(selectedPortal)}` : '';
     if (lower.includes('fetch') || lower.includes('network') || lower.includes('connection')) {
-      redirect(`/?error=connection${portalQuery}`);
+      redirect('/?error=connection');
     }
     if (lower.includes('invalid login credentials')) {
-      redirect(`/?error=credentials${portalQuery}`);
+      redirect('/?error=credentials');
     }
-    redirect(`/?error=${encodeURIComponent(msg)}${portalQuery}`);
+    redirect(`/?error=${encodeURIComponent(msg)}`);
   }
 
   const metaRole = data.user.app_metadata?.role || data.user.user_metadata?.role;
@@ -54,13 +52,6 @@ export async function login(formData: FormData) {
   }
 
   if (isSuperAdmin) {
-    // If Super Admin specifically selected manager or admin portal tab, route there
-    if (selectedPortal === 'manager') {
-      redirect('/manager');
-    }
-    if (selectedPortal === 'admin') {
-      redirect('/app');
-    }
     redirect('/owner');
   }
 

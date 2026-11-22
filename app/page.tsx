@@ -14,12 +14,7 @@ import {
   AlertCircle,
   CheckCircle2,
   ArrowLeft,
-  ShieldCheck,
-  Layers,
-  Crown,
 } from 'lucide-react';
-
-type PortalRole = 'admin' | 'manager' | 'owner';
 
 export default function Home() {
   const router = useRouter();
@@ -38,7 +33,6 @@ export default function Home() {
   );
 
   const [mode, setMode] = useState<'login' | 'forgot' | 'setup'>('login');
-  const [portal, setPortal] = useState<PortalRole>('admin');
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [email, setEmail] = useState('');
@@ -61,10 +55,6 @@ export default function Home() {
       } else {
         setError(`የመግባት ስህተት: ${decodeURIComponent(err)}`);
       }
-    }
-    const p = params.get('portal')?.toLowerCase();
-    if (p === 'manager' || p === 'owner' || p === 'admin') {
-      setPortal(p);
     }
     if (params.get('setup') === 'help') {
       setMode('forgot');
@@ -156,30 +146,10 @@ export default function Home() {
     router.replace('/app');
   };
 
-  const handlePortalChange = (nextPortal: PortalRole) => {
-    setPortal(nextPortal);
-    setError('');
-    try {
-      const url = new URL(window.location.href);
-      url.searchParams.set('portal', nextPortal);
-      window.history.replaceState({}, '', url.toString());
-    } catch {
-      // Ignore
-    }
-  };
-
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-center items-center p-4 sm:p-6 font-sans relative overflow-hidden">
       {/* Subtle background glow */}
-      <div
-        className={`absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[520px] h-[520px] blur-[140px] rounded-full pointer-events-none transition-colors duration-500 ${
-          portal === 'admin'
-            ? 'bg-sky-500/10'
-            : portal === 'manager'
-            ? 'bg-amber-500/10'
-            : 'bg-violet-500/10'
-        }`}
-      />
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-sky-500/10 blur-[130px] rounded-full pointer-events-none" />
 
       <div className="w-full max-w-sm relative z-10 space-y-6">
         {/* Brand Header */}
@@ -218,169 +188,78 @@ export default function Home() {
               LOGIN MODE
           ========================================================================= */}
           {mode === 'login' && (
-            <div className="space-y-4">
-              {/* Segmented 3-Way Portal Selector */}
-              <div className="space-y-2">
-                <div className="grid grid-cols-3 gap-1.5 p-1 rounded-2xl bg-slate-950/80 border border-slate-800">
-                  <button
-                    type="button"
-                    onClick={() => handlePortalChange('admin')}
-                    className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 py-2 px-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                      portal === 'admin'
-                        ? 'bg-sky-600 text-white shadow-md shadow-sky-950/60'
-                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
-                    }`}
-                  >
-                    <Layers className="w-3.5 h-3.5 shrink-0" />
-                    <span className="truncate">አስተዳዳሪ</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handlePortalChange('manager')}
-                    className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 py-2 px-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                      portal === 'manager'
-                        ? 'bg-amber-600 text-white shadow-md shadow-amber-950/60'
-                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
-                    }`}
-                  >
-                    <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
-                    <span className="truncate">ስራ አስኪያጅ</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handlePortalChange('owner')}
-                    className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 py-2 px-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                      portal === 'owner'
-                        ? 'bg-violet-600 text-white shadow-md shadow-violet-950/60'
-                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
-                    }`}
-                  >
-                    <Crown className="w-3.5 h-3.5 shrink-0" />
-                    <span className="truncate">ባለቤት</span>
-                  </button>
-                </div>
-
-                {/* Portal Destination Hint Box */}
-                <div
-                  className={`p-2.5 rounded-xl border transition-all ${
-                    portal === 'admin'
-                      ? 'border-sky-900/60 bg-sky-950/30 text-sky-200'
-                      : portal === 'manager'
-                      ? 'border-amber-900/60 bg-amber-950/30 text-amber-200'
-                      : 'border-violet-900/60 bg-violet-950/30 text-violet-200'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold font-sans">
-                      {portal === 'admin'
-                        ? 'የአስተዳዳሪ መግቢያ (Admin Portal)'
-                        : portal === 'manager'
-                        ? 'የስራ አስኪያጅ መግቢያ (Manager Portal)'
-                        : 'የባለቤት መግቢያ (Super Admin / Owner)'}
-                    </span>
-                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-slate-900/80 border border-slate-700/60">
-                      {portal === 'admin' ? '/app' : portal === 'manager' ? '/manager' : '/owner'}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
-                    {portal === 'admin'
-                      ? 'የእለት ተእለት ምርት፣ የሲሚንቶ መጋዘን፣ ሽያጭ እና ደመወዝ'
-                      : portal === 'manager'
-                      ? 'የፋብሪካው አጠቃላይ እይታ፣ የሽያጭ ዋጋዎች፣ ሪፖርቶች እና ማሽነሪ'
-                      : 'ሙሉ የፋብሪካው የቁጥጥርና የፋይናንስ አስተዳደር ዳሽቦርድ'}
-                  </p>
+            <form action={login} className="space-y-4">
+              {/* Email */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-300">
+                  ኢሜይል
+                </label>
+                <div className="relative flex items-center">
+                  <Mail className="absolute left-3.5 w-4 h-4 text-slate-500 pointer-events-none" />
+                  <input
+                    name="email"
+                    type="email"
+                    required
+                    autoComplete="email"
+                    placeholder="name@damena.et"
+                    className="w-full h-11 bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-3.5 text-sm text-white placeholder-slate-600 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 font-medium"
+                  />
                 </div>
               </div>
 
-              <form action={login} className="space-y-4">
-                <input type="hidden" name="portal" value={portal} />
-
-                {/* Email */}
-                <div className="space-y-1.5">
+              {/* Password */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
                   <label className="block text-xs font-bold text-slate-300">
-                    ኢሜይል
+                    የይለፍ ቃል
                   </label>
-                  <div className="relative flex items-center">
-                    <Mail className="absolute left-3.5 w-4 h-4 text-slate-500 pointer-events-none" />
-                    <input
-                      name="email"
-                      type="email"
-                      required
-                      autoComplete="email"
-                      placeholder="name@damena.et"
-                      className="w-full h-11 bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-3.5 text-sm text-white placeholder-slate-600 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 font-medium"
-                    />
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode('forgot');
+                      setError('');
+                      setNotice('');
+                    }}
+                    className="text-xs text-sky-400 hover:text-sky-300 font-semibold cursor-pointer"
+                  >
+                    የይለፍ ቃል ረሱ?
+                  </button>
                 </div>
 
-                {/* Password */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <label className="block text-xs font-bold text-slate-300">
-                      የይለፍ ቃል
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMode('forgot');
-                        setError('');
-                        setNotice('');
-                      }}
-                      className="text-xs text-sky-400 hover:text-sky-300 font-semibold cursor-pointer"
-                    >
-                      የይለፍ ቃል ረሱ?
-                    </button>
-                  </div>
-
-                  <div className="relative flex items-center">
-                    <Lock className="absolute left-3.5 w-4 h-4 text-slate-500 pointer-events-none" />
-                    <input
-                      name="password"
-                      type={showPassword ? 'text' : 'password'}
-                      required
-                      autoComplete="current-password"
-                      placeholder="••••••••••••"
-                      className="w-full h-11 bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-10 text-sm text-white placeholder-slate-600 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 font-mono"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 text-slate-500 hover:text-slate-300 p-1 cursor-pointer"
-                      aria-label={showPassword ? 'Hide password' : 'Show password'}
-                    >
-                      {showPassword ? (
-                        <EyeOff className="w-4 h-4" />
-                      ) : (
-                        <Eye className="w-4 h-4" />
-                      )}
-                    </button>
-                  </div>
+                <div className="relative flex items-center">
+                  <Lock className="absolute left-3.5 w-4 h-4 text-slate-500 pointer-events-none" />
+                  <input
+                    name="password"
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    autoComplete="current-password"
+                    placeholder="••••••••••••"
+                    className="w-full h-11 bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-10 text-sm text-white placeholder-slate-600 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 font-mono"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 text-slate-500 hover:text-slate-300 p-1 cursor-pointer"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </button>
                 </div>
+              </div>
 
-                {/* Sign In Button with role-based styling */}
-                <button
-                  type="submit"
-                  className={`w-full h-11 mt-1 inline-flex items-center justify-center gap-2 rounded-xl text-sm font-bold text-white shadow-md transition-all cursor-pointer ${
-                    portal === 'admin'
-                      ? 'bg-sky-600 hover:bg-sky-500 shadow-sky-950/60'
-                      : portal === 'manager'
-                      ? 'bg-amber-600 hover:bg-amber-500 shadow-amber-950/60'
-                      : 'bg-violet-600 hover:bg-violet-500 shadow-violet-950/60'
-                  }`}
-                >
-                  <span>
-                    {portal === 'admin'
-                      ? 'ወደ አስተዳዳሪ ፖርታል ግባ'
-                      : portal === 'manager'
-                      ? 'ወደ ስራ አስኪያጅ ፖርታል ግባ'
-                      : 'ወደ ባለቤት ፖርታል ግባ'}
-                  </span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </form>
-            </div>
+              {/* Sign In Button */}
+              <button
+                type="submit"
+                className="w-full h-11 mt-1 inline-flex items-center justify-center gap-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-sm font-bold text-white shadow-md transition-all cursor-pointer"
+              >
+                <span>ግባ</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </form>
           )}
 
           {/* =========================================================================
