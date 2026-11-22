@@ -36,7 +36,7 @@ const ownerNavItems: OwnerNavItem[] = [
   { href: '/owner/prices', label: 'ዋጋዎች', mobileLabel: 'ዋጋ', icon: Tag },
   { href: '/owner/reports', label: 'ሪፖርቶች', mobileLabel: 'ሪፖርት', icon: ChartNoAxesCombined },
   { href: '/owner/records', label: 'መዝገቦችን አስተዳድር', mobileLabel: 'መዝገቦች', icon: ClipboardPenLine },
-  { href: '/owner/users', label: 'ተጠቃሚዎች', mobileLabel: 'ተጠቃሚዎች', icon: Users },
+  { href: '/owner/users', label: 'ስራ አስኪያጅና ተጠቃሚዎች', mobileLabel: 'አስኪያጅ', icon: Users },
   { href: '/owner/machinery', label: 'ማሽነሪ', mobileLabel: 'ማሽነሪ', icon: Wrench },
 ];
 

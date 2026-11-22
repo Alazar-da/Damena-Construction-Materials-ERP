@@ -670,15 +670,15 @@ export default async function AdminOverview({
           </Link>
         ) : (
           <Link
-            href="/owner/records"
+            href="/owner/users"
             className="p-3 sm:p-3.5 rounded-2xl bg-white border border-slate-200/90 shadow-2xs hover:border-slate-300 active:scale-98 transition-all flex items-center gap-2.5 sm:gap-3"
           >
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-50 text-emerald-800 flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-violet-50 text-violet-800 flex items-center justify-center shrink-0">
               <Users className="w-4 h-4" />
             </div>
             <div className="min-w-0">
-              <div className="text-xs font-black text-slate-900 truncate">መዝገቦች</div>
-              <div className="text-[10px] text-slate-400 truncate">የስራ መዝገቦች</div>
+              <div className="text-xs font-black text-slate-900 truncate">የስራ አስኪያጅ መለያ</div>
+              <div className="text-[10px] text-slate-400 truncate">አዲስ ስራ አስኪያጅ ፍጠር</div>
             </div>
           </Link>
         )}

@@ -16,27 +16,27 @@ export async function createAdmin(formData: FormData) {
   const displayName = String(formData.get('display_name') || '').trim();
   const password = String(formData.get('password') || '');
   const confirmPassword = String(formData.get('confirm_password') || '');
-  if (!email || !email.includes('@')) redirect('/owner/users?error=Enter%20a%20valid%20email');
-  if (password.length < 8) redirect('/owner/users?error=Password%20must%20be%20at%20least%208%20characters');
-  if (password !== confirmPassword) redirect('/owner/users?error=Passwords%20do%20not%20match');
+  if (!email || !email.includes('@')) redirect('/owner/users?error=' + encodeURIComponent('እባክዎ ትክክለኛ ኢሜይል ያስገቡ።'));
+  if (password.length < 8) redirect('/owner/users?error=' + encodeURIComponent('የይለፍ ቃሉ ቢያንስ 8 ቁምፊ መሆን አለበት።'));
+  if (password !== confirmPassword) redirect('/owner/users?error=' + encodeURIComponent('የይለፍ ቃሎቹ አይመሳሰሉም።'));
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
-  if (!url || !key) redirect('/owner/users?error=Supabase%20server%20admin%20key%20is%20not%20configured');
+  if (!url || !key) redirect('/owner/users?error=' + encodeURIComponent('የSupabase አስተዳዳሪ ቁልፍ (Service Key) አልተዘጋጀም።'));
 
   const admin = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
   const { data, error } = await admin.auth.admin.createUser({
     email,
     password,
     email_confirm: true,
-    user_metadata: { display_name: displayName || email.split('@')[0] },
+    user_metadata: { display_name: displayName || email.split('@')[0], role: 'admin' },
   });
   let accountId = data.user?.id;
   let restoredExisting = false;
   if (!accountId && error) {
     const message = error.message.toLowerCase();
     const duplicate = message.includes('already') || message.includes('registered') || message.includes('exists');
-    if (!duplicate) redirect(`/owner/users?error=${encodeURIComponent(error.message || 'Account creation failed')}`);
+    if (!duplicate) redirect(`/owner/users?error=${encodeURIComponent(error.message || 'መለያ መፍጠር አልተቻለም')}`);
 
     for (let page = 1; page <= 10 && !accountId; page += 1) {
       const { data: usersPage, error: listError } = await admin.auth.admin.listUsers({ page, perPage: 1000 });
@@ -45,15 +45,15 @@ export async function createAdmin(formData: FormData) {
       if (existingUser) accountId = existingUser.id;
       if (usersPage.users.length < 1000) break;
     }
-    if (!accountId) redirect('/owner/users?error=Existing%20login%20was%20not%20found');
+    if (!accountId) redirect('/owner/users?error=' + encodeURIComponent('የተመዘገበው ተጠቃሚ አልተገኘም።'));
 
     const { data: existingProfile } = await client.from('profiles').select('role').eq('id', accountId).maybeSingle();
-    if (existingProfile?.role === 'super_admin') redirect('/owner/users?error=Cannot%20reset%20a%20super-admin%20account%20here');
+    if (existingProfile?.role === 'super_admin') redirect('/owner/users?error=' + encodeURIComponent('የዋና አስተዳዳሪ (Super Admin) መለያን እዚህ ማስተካከል አይቻልም።'));
 
     const { error: updateError } = await admin.auth.admin.updateUserById(accountId, {
       password,
       email_confirm: true,
-      user_metadata: { display_name: displayName || email.split('@')[0] },
+      user_metadata: { display_name: displayName || email.split('@')[0], role: 'admin' },
     });
     if (updateError) redirect(`/owner/users?error=${encodeURIComponent(updateError.message)}`);
     restoredExisting = true;
@@ -64,5 +64,5 @@ export async function createAdmin(formData: FormData) {
     p_display_name: displayName || email.split('@')[0],
   });
   if (profileError) redirect(`/owner/users?error=${encodeURIComponent(profileError.message)}`);
-  redirect(`/owner/users?success=${encodeURIComponent(restoredExisting ? 'Existing login restored and password updated' : 'Account created')}`);
+  redirect(`/owner/users?success=${encodeURIComponent(restoredExisting ? 'የነበረው የስራ አስኪያጅ መለያ የይለፍ ቃል ተቀይሮ ተስተካክሏል።' : 'የስራ አስኪያጅ (Manager) መለያ በተሳካ ሁኔታ ተፈጥሯል!')}`);
 }
