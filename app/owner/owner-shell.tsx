@@ -20,6 +20,7 @@ import {
   UserRound,
   Wrench,
   Bell,
+  Crown,
 } from 'lucide-react';
 import { logout } from '@/app/login/actions';
 import { HeaderSlotProvider, useHeaderSlot } from '@/components/header-slot-context';
@@ -273,6 +274,58 @@ function OwnerShellInner({ children, userEmail, displayName }: OwnerShellProps) 
             );
           })}
         </nav>
+
+        {/* Mobile Drawer Footer */}
+        <div className="p-3 border-t border-slate-800/60 space-y-2">
+          {userEmail && (
+            <div className="px-3 py-2 rounded-xl bg-slate-900/70 border border-slate-800">
+              <div className="flex items-center gap-1.5 text-violet-400 text-[10px] font-mono font-semibold uppercase tracking-wider">
+                <Crown className="w-3.5 h-3.5 text-violet-400 shrink-0" />
+                <span>ዋና ባለቤት (Owner)</span>
+              </div>
+              <p className="text-sm text-slate-200 font-semibold truncate mt-0.5">
+                {displayName || userEmail.split('@')[0]}
+              </p>
+            </div>
+          )}
+
+          <Link
+            href="/owner/profile"
+            onClick={() => setIsMobileOpen(false)}
+            className="flex min-h-11 items-center gap-2.5 rounded-xl px-3 text-sm font-semibold text-slate-200 hover:bg-slate-900 transition-colors"
+          >
+            <UserRound className="h-4 w-4 text-blue-300" />
+            <span>መገለጫ</span>
+          </Link>
+
+          <Link
+            href="/manager"
+            onClick={() => setIsMobileOpen(false)}
+            className="flex min-h-11 items-center gap-2.5 rounded-xl px-3 text-sm font-semibold text-amber-400 hover:bg-slate-900 transition-colors"
+          >
+            <ShieldCheck className="h-4 w-4 text-amber-400" />
+            <span>የስራ አስኪያጅ ገጽ (/manager)</span>
+          </Link>
+
+          <Link
+            href="/app"
+            onClick={() => setIsMobileOpen(false)}
+            className="flex min-h-11 items-center gap-2.5 rounded-xl px-3 text-sm font-semibold text-slate-300 hover:bg-slate-900 transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4 text-slate-400" />
+            <span>የሰራተኞች ገጽ (/app)</span>
+          </Link>
+
+          <form action={logout}>
+            <button
+              type="submit"
+              className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-400 hover:text-rose-400 hover:bg-slate-900 transition-colors cursor-pointer"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>ውጣ</span>
+            </button>
+          </form>
+        </div>
       </aside>
 
       {/* =========================================================================
@@ -358,15 +411,22 @@ function OwnerShellInner({ children, userEmail, displayName }: OwnerShellProps) 
             </Link>
           </div>
 
-          {/* Switch to Staff App Button */}
+          {/* Switch to Manager and Staff App Buttons */}
           <div className="flex items-center gap-2 md:max-xl:hidden">
+            <Link
+              href="/manager"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-amber-200 bg-amber-50 text-xs font-bold text-amber-900 hover:bg-amber-100 transition-colors"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-amber-700" />
+              <span>የስራ አስኪያጅ ገጽ</span>
+            </Link>
             <Link
               href="/app"
               className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">ተመለስ ወደ </span>
-              <span>የሰራተኞች መተግበሪያ</span>
+              <span className="hidden sm:inline">ወደ </span>
+              <span>የሰራተኞች ገጽ</span>
             </Link>
           </div>
         </header>
