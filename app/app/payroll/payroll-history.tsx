@@ -51,7 +51,7 @@ export default function PayrollHistory({
           className="mt-1 px-5 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-800 text-xs font-bold flex items-center gap-2 shadow-2xs transition-all hover:border-slate-300 hover:shadow-xs cursor-pointer"
         >
           <History className="w-4 h-4 text-blue-600" />
-          <span>የክፍያ ታሪክ አሳይ (Display History)</span>
+          <span>የክፍያ ታሪክ አሳይ</span>
         </button>
       </div>
     );
@@ -79,7 +79,7 @@ export default function PayrollHistory({
             className="text-xs font-semibold text-slate-500 hover:text-slate-800 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <X className="w-3.5 h-3.5" />
-            <span>ታሪክ ዝጋ (Close)</span>
+            <span>ዝጋ</span>
           </button>
         </div>
       </div>

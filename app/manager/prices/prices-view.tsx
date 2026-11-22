@@ -21,7 +21,7 @@ interface Product {
 }
 
 const money = (val: number) =>
-  `ETB ${Number(val || 0).toLocaleString('en-KE', { maximumFractionDigits: 2 })}`;
+  `${Number(val || 0).toLocaleString('en-KE', { maximumFractionDigits: 2 })} ብር`;
 
 export default function PricesView({ initialProducts }: { initialProducts: Product[] }) {
   const [editingId, setEditingId] = useState<string | null>(null);

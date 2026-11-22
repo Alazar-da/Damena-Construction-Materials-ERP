@@ -158,7 +158,7 @@ function AppShellInner({
                 DAMENA
               </span>
               <span className="text-[10px] font-mono text-sky-400 font-semibold uppercase tracking-wider block mt-0.5">
-                አስተዳዳሪ (Admin)
+                አስተዳዳሪ
               </span>
             </div>
           </Link>
@@ -318,7 +318,7 @@ function AppShellInner({
                 DAMENA
               </span>
               <span className="text-[10px] font-mono text-sky-400 font-semibold uppercase tracking-wider block mt-0.5">
-                አስተዳዳሪ (Admin)
+                አስተዳዳሪ
               </span>
             </div>
           </div>

@@ -10,7 +10,6 @@ import {
   CheckCircle2,
   AlertCircle,
   Crown,
-  Info,
   Layers,
 } from 'lucide-react';
 
@@ -68,7 +67,7 @@ export default async function OwnerUsersPage({
             የተጠቃሚዎች እና ስራ አስኪያጆች መለያ
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            የስራ አስኪያጅ (Manager) ወይም የአስተዳዳሪ (Admin) መለያዎችን ይፍጠሩ እና ያስተዳድሩ
+            የስራ አስኪያጅ ወይም የአስተዳዳሪ መለያዎችን ይፍጠሩ እና ያስተዳድሩ
           </p>
         </div>
 
@@ -95,20 +94,6 @@ export default async function OwnerUsersPage({
               <div className="text-sm font-black font-mono text-violet-950">{superAdminCount}</div>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Explanatory Info Card */}
-      <div className="bg-slate-900 text-white rounded-2xl p-4 sm:p-5 flex items-start gap-3.5 shadow-sm">
-        <Info className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-        <div className="text-xs sm:text-sm text-slate-200 leading-relaxed space-y-1">
-          <span className="font-bold text-white block">የመለያዎች ልዩነትና አሰራር፦</span>
-          <p>
-            • <strong>ስራ አስኪያጅ (Manager)</strong>፦ በመግቢያ ገጹ ሲገባ በቀጥታ ወደ <strong>/manager</strong> ፖርታል ይወሰዳል። (አጠቃላይ እይታ፣ ዋጋዎች፣ ሪፖርቶች እና ማሽነሪ ብቻ ያገኛል)።
-          </p>
-          <p>
-            • <strong>አስተዳዳሪ (Admin)</strong>፦ በመግቢያ ገጹ ሲገባ በቀጥታ ወደ <strong>/app</strong> የስራ ጠረጴዛ ይወሰዳል። (ሲሚንቶ፣ ምርት፣ ሽያጭ፣ ደመወዝ ያስተዳድራል)።
-          </p>
         </div>
       </div>
 
@@ -151,7 +136,7 @@ export default async function OwnerUsersPage({
           <div className="space-y-1.5 sm:col-span-2">
             <label className="text-xs font-black text-slate-800 uppercase tracking-wider block flex items-center gap-1.5">
               <ShieldCheck className="w-3.5 h-3.5 text-slate-400" />
-              <span>የመለያ ዓይነት / ሚና ይምረጡ (Choose Role) <span className="text-rose-500">*</span></span>
+              <span>የመለያ ዓይነት / ሚና <span className="text-rose-500">*</span></span>
             </label>
             <select
               name="role"
@@ -159,12 +144,8 @@ export default async function OwnerUsersPage({
               defaultValue="manager"
               className="erp-input h-12 px-3.5 text-sm font-bold text-slate-900 w-full bg-slate-50 border border-slate-300 rounded-xl cursor-pointer focus:bg-white"
             >
-              <option value="manager">
-                💼 ስራ አስኪያጅ (Manager) — ወደ /manager ፖርታል (አጠቃላይ እይታ፣ ዋጋዎች፣ ሪፖርቶች፣ ማሽነሪ)
-              </option>
-              <option value="admin">
-                👷 አስተዳዳሪ / ኦፕሬተር (Admin) — ወደ /app የስራ ጠረጴዛ (ሲሚንቶ፣ ምርት፣ ሽያጭ፣ ደመወዝ)
-              </option>
+              <option value="manager">💼 ስራ አስኪያጅ</option>
+              <option value="admin">👷 አስተዳዳሪ</option>
             </select>
           </div>
 
@@ -189,7 +170,7 @@ export default async function OwnerUsersPage({
           <div className="space-y-1.5">
             <label className="text-xs font-black text-slate-800 uppercase tracking-wider block flex items-center gap-1.5">
               <Mail className="w-3.5 h-3.5 text-slate-400" />
-              <span>ኢሜይል አድራሻ (Login Email) <span className="text-rose-500">*</span></span>
+              <span>ኢሜይል አድራሻ <span className="text-rose-500">*</span></span>
             </label>
             <input
               name="email"
@@ -204,7 +185,7 @@ export default async function OwnerUsersPage({
           <div className="space-y-1.5">
             <label className="text-xs font-black text-slate-800 uppercase tracking-wider block flex items-center gap-1.5">
               <KeyRound className="w-3.5 h-3.5 text-slate-400" />
-              <span>የይለፍ ቃል (Password) <span className="text-rose-500">*</span></span>
+              <span>የይለፍ ቃል <span className="text-rose-500">*</span></span>
             </label>
             <input
               name="password"
@@ -235,10 +216,7 @@ export default async function OwnerUsersPage({
           </div>
         </div>
 
-        <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <p className="text-xs text-slate-500">
-            ተጠቃሚው በዋናው የመግቢያ ገጽ ላይ ሲገባ በመረጡለት ሚና መሰረት በቀጥታ ወደ ሚመለከተው ፖርታል ይወሰዳል።
-          </p>
+        <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-end gap-3">
           <button
             type="submit"
             className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm transition-colors cursor-pointer shadow-xs shrink-0"
@@ -296,7 +274,7 @@ export default async function OwnerUsersPage({
                       </p>
                       {isMe && (
                         <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-200 text-slate-700 font-bold">
-                          እርስዎ (You)
+                          እርስዎ
                         </span>
                       )}
                     </div>
@@ -315,10 +293,10 @@ export default async function OwnerUsersPage({
                     }`}
                   >
                     {isSuper
-                      ? 'ዋና ባለቤት (Super Admin · /owner)'
+                      ? 'ዋና ባለቤት'
                       : isManager
-                      ? 'ስራ አስኪያጅ (Manager · /manager)'
-                      : 'አስተዳዳሪ (Admin · /app)'}
+                      ? 'ስራ አስኪያጅ'
+                      : 'አስተዳዳሪ'}
                   </span>
                   <span
                     className={`text-xs font-semibold px-2 py-0.5 rounded-full ${

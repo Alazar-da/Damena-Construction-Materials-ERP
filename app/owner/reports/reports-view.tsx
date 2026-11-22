@@ -364,7 +364,7 @@ export default function ReportsView({
           className="p-3.5 sm:p-4 bg-white border border-slate-200 rounded-2xl shadow-2xs flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 animate-in fade-in"
         >
           <div className="flex items-center gap-2 flex-1">
-            <label className="text-xs font-bold text-slate-600 shrink-0">ከ (From):</label>
+            <label className="text-xs font-bold text-slate-600 shrink-0">ከ:</label>
             <input
               type="date"
               value={fromDate}
@@ -374,7 +374,7 @@ export default function ReportsView({
             />
           </div>
           <div className="flex items-center gap-2 flex-1">
-            <label className="text-xs font-bold text-slate-600 shrink-0">እስከ (To):</label>
+            <label className="text-xs font-bold text-slate-600 shrink-0">እስከ:</label>
             <input
               type="date"
               value={toDate}
@@ -447,7 +447,7 @@ export default function ReportsView({
           <div className="rounded-2xl sm:rounded-3xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xs flex flex-col justify-between">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                ጠቅላላ የገባ ገቢ (Money In)
+                ጠቅላላ የገባ ገቢ
               </span>
               <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
                 <ArrowDownLeft className="w-5 h-5" />
@@ -468,7 +468,7 @@ export default function ReportsView({
           <div className="rounded-2xl sm:rounded-3xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xs flex flex-col justify-between">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                የወጣ ወጪ (Money Out)
+                የወጣ ወጪ
               </span>
               <div className="w-9 h-9 rounded-xl bg-rose-50 text-rose-700 flex items-center justify-center font-bold">
                 <ArrowUpRight className="w-5 h-5" />

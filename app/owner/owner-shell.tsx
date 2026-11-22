@@ -262,7 +262,7 @@ function OwnerShellInner({ children, userEmail, displayName }: OwnerShellProps) 
             <div className="px-3 py-2 rounded-xl bg-slate-900/70 border border-slate-800">
               <div className="flex items-center gap-1.5 text-violet-400 text-[10px] font-mono font-semibold uppercase tracking-wider">
                 <Crown className="w-3.5 h-3.5 text-violet-400 shrink-0" />
-                <span>ዋና ባለቤት (Owner)</span>
+                <span>ዋና ባለቤት</span>
               </div>
               <p className="text-sm text-slate-200 font-semibold truncate mt-0.5">
                 {displayName || userEmail.split('@')[0]}

@@ -149,7 +149,7 @@ export default function SalesDesk({
           <div className="flex items-center gap-1.5 text-xs text-slate-400 font-mono">
             <span>ዳሽቦርድ</span>
             <span>&gt;</span>
-            <span className="text-slate-800 font-bold">የሽያጭ ዴስክ (Sales Desk)</span>
+            <span className="text-slate-800 font-bold">የሽያጭ ዴስክ</span>
           </div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 mt-1">
             {activeTab === 'products' ? 'የምርት ሽያጭ እና ደረሰኝ' : 'የወርክሾፕ እና ባትሪ አገልግሎት'}
@@ -305,7 +305,7 @@ export default function SalesDesk({
             {/* Quantity Stepper (Wheel Scroll Locked, No Chips) */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-xs">
-                <label className="font-semibold text-slate-700">የሽያጭ ብዛት (Quantity)</label>
+                <label className="font-semibold text-slate-700">የሽያጭ ብዛት</label>
                 <span className="text-[11px] text-slate-400 font-mono">
                   {tracksStock ? `ቀሪ: ${availableStock.toLocaleString()}` : ''}
                 </span>
@@ -348,7 +348,7 @@ export default function SalesDesk({
 
             {/* Customer Details */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700 block">የደንበኛ ስም (Customer Name)</label>
+              <label className="text-xs font-semibold text-slate-700 block">የደንበኛ ስም</label>
               <input
                 name="customer_name"
                 value={customerName}
@@ -360,12 +360,12 @@ export default function SalesDesk({
 
             {/* Payment Method Selector */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700 block">የክፍያ ዘዴ (Payment Method)</label>
+              <label className="text-xs font-semibold text-slate-700 block">የክፍያ ዘዴ</label>
               <input type="hidden" name="payment_method" value={paymentMethod} />
               <div className="grid grid-cols-2 gap-1.5">
                 {[
-                  { id: 'cash', label: 'ጥሬ ገንዘብ (Cash)' },
-                  { id: 'bank', label: 'ባንክ / ዲጂታል (Bank/Digital)' },
+                  { id: 'cash', label: 'ጥሬ ገንዘብ' },
+                  { id: 'bank', label: 'ባንክ / ዲጂታል' },
                 ].map((m) => (
                   <button
                     key={m.id}
@@ -462,11 +462,10 @@ export default function SalesDesk({
                 <Zap className="w-4 h-4 text-amber-500" />
                 <span>የአገልግሎት ክፍያ ማጠቃለያ</span>
               </h2>
-              <p className="text-[11px] text-slate-400 font-mono mt-0.5">Service Checkout</p>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700 block">የደንበኛ ስም (Customer Name)</label>
+              <label className="text-xs font-semibold text-slate-700 block">የደንበኛ ስም</label>
               <input
                 name="customer_name"
                 value={serviceCustomer}
@@ -539,7 +538,7 @@ export default function SalesDesk({
               className="px-6 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold flex items-center gap-2 shadow-2xs transition-all hover:border-slate-300 hover:shadow-xs cursor-pointer"
             >
               <History className="w-4 h-4 text-emerald-600" />
-              <span>የሽያጭ ታሪክ አሳይ (Display History)</span>
+              <span>የሽያጭ ታሪክ አሳይ</span>
             </button>
           </div>
         ) : (
@@ -557,7 +556,7 @@ export default function SalesDesk({
                 className="text-xs font-semibold text-slate-500 hover:text-slate-800 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 <X className="w-3.5 h-3.5" />
-                <span>ታሪክ ዝጋ (Close)</span>
+                <span>ዝጋ</span>
               </button>
             </div>
 

@@ -167,7 +167,7 @@ export default function MachineryPage({
           {/* Name (8 cols) */}
           <div className="md:col-span-8 space-y-1.5">
             <label className="text-xs font-black text-slate-800 uppercase tracking-wider block">
-              የማሽኑ ስም (Name) <span className="text-rose-500">*</span>
+              የማሽኑ ስም <span className="text-rose-500">*</span>
             </label>
             <input
               name="name"
@@ -183,7 +183,7 @@ export default function MachineryPage({
           {/* How Much / Quantity (4 cols) */}
           <div className="md:col-span-4 space-y-1.5">
             <label className="text-xs font-black text-slate-800 uppercase tracking-wider block">
-              ብዛት (Quantity) <span className="text-rose-500">*</span>
+              ብዛት <span className="text-rose-500">*</span>
             </label>
             <div className="flex items-center gap-2">
               <button
@@ -218,7 +218,7 @@ export default function MachineryPage({
         <div className="space-y-1.5 pt-1">
           <label className="text-xs font-black text-slate-800 uppercase tracking-wider block flex items-center gap-1.5">
             <Camera className="w-3.5 h-3.5 text-slate-400" />
-            <span>ፎቶ (Photo)</span>
+            <span>ፎቶ</span>
             <span className="text-[10px] text-slate-400 font-normal lowercase">(አማራጭ)</span>
           </label>
 
@@ -281,7 +281,7 @@ export default function MachineryPage({
             className="px-6 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold flex items-center gap-2 shadow-2xs transition-all hover:border-slate-300 hover:shadow-xs cursor-pointer"
           >
             <Cog className="w-4 h-4 text-slate-800" />
-            <span>የተመዘገቡ ማሽኖችን አሳይ (Display Machines)</span>
+            <span>የተመዘገቡ ማሽኖች</span>
           </button>
         </div>
       ) : (
@@ -301,7 +301,7 @@ export default function MachineryPage({
               className="text-xs font-semibold text-slate-500 hover:text-slate-800 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <X className="w-3.5 h-3.5" />
-              <span>ዝጋ (Close)</span>
+              <span>ዝጋ</span>
             </button>
           </div>
 

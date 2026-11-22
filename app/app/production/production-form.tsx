@@ -43,15 +43,12 @@ export default function ProductionForm({ products }: { products: OutputProduct[]
           <h2 className="text-sm font-bold text-slate-900">አዲስ ባች መዝግብ</h2>
           <p className="text-[11px] text-slate-500">የተመረተውን ዓይነት እና ብዛት ያስገቡ</p>
         </div>
-        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-600 uppercase">
-          Batch Entry
-        </span>
       </div>
 
       {/* 1. Visual Product Photo Selector */}
       <div>
         <label className="text-xs font-bold text-slate-800 block mb-2">
-          1. የምርት ዓይነት ይምረጡ (Select Product)
+          1. የምርት ዓይነት ይምረጡ
         </label>
         <input type="hidden" name="output" value={selectedId} required />
 

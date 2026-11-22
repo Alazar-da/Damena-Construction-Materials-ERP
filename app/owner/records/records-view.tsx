@@ -400,7 +400,7 @@ export default function OwnerRecords({
                       />
                     </FieldLabel>
 
-                    <FieldLabel label={`Quantity${line ? ` (${line.unit_snapshot})` : ''}`}>
+                    <FieldLabel label={`ብዛት${line ? ` (${line.unit_snapshot})` : ''}`}>
                       <input
                         className={numInputClass}
                         name="quantity"
@@ -548,7 +548,7 @@ export default function OwnerRecords({
               <form action={updateOwnerPayroll} className="space-y-3.5">
                 <input type="hidden" name="id" value={p.id} />
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                  <FieldLabel label="Worker Name">
+                  <FieldLabel label="የሰራተኛ ስም">
                     <input
                       className={inputClass}
                       name="worker_name"
@@ -557,13 +557,13 @@ export default function OwnerRecords({
                     />
                   </FieldLabel>
 
-                  <FieldLabel label="Pay Period">
+                  <FieldLabel label="የክፍያ ጊዜ">
                     <select className={inputClass} name="pay_type" defaultValue={p.pay_type}>
                       <option value="daily">ዕለታዊ</option><option value="weekly">ሳምንታዊ</option><option value="monthly">ወርሃዊ</option>
                     </select>
                   </FieldLabel>
 
-                  <FieldLabel label="Date">
+                  <FieldLabel label="ቀን">
                     <input
                       className={inputClass}
                       name="period_start"
@@ -573,7 +573,7 @@ export default function OwnerRecords({
                     />
                   </FieldLabel>
 
-                  <FieldLabel label="Amount Paid (ETB)">
+                  <FieldLabel label="የተከፈለ መጠን (ብር)">
                     <input
                       className={numInputClass}
                       name="amount"
@@ -585,7 +585,7 @@ export default function OwnerRecords({
                     />
                   </FieldLabel>
 
-                  <FieldLabel label="Payment Method">
+                  <FieldLabel label="የክፍያ ዘዴ">
                     <select
                       className={inputClass}
                       name="payment_method"
@@ -596,7 +596,7 @@ export default function OwnerRecords({
                   </FieldLabel>
 
                   <div className="sm:col-span-2">
-                    <FieldLabel label="Notes">
+                    <FieldLabel label="ማስታወሻ">
                       <input
                         className={inputClass}
                         name="notes"
@@ -631,7 +631,7 @@ export default function OwnerRecords({
                 <form action={updateOwnerProduction} className="space-y-3.5">
                   <input type="hidden" name="id" value={r.id} />
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    <FieldLabel label="Production Date">
+                    <FieldLabel label="የምርት ቀን">
                       <input
                         className={inputClass}
                         name="production_date"
@@ -641,7 +641,7 @@ export default function OwnerRecords({
                       />
                     </FieldLabel>
 
-                    <FieldLabel label="Output Quantity">
+                    <FieldLabel label="የምርት ብዛት">
                       <input
                         className={numInputClass}
                         name="output_quantity"
@@ -653,7 +653,7 @@ export default function OwnerRecords({
                       />
                     </FieldLabel>
 
-                    <FieldLabel label="Notes">
+                    <FieldLabel label="ማስታወሻ">
                       <input
                         className={inputClass}
                         name="notes"
@@ -689,7 +689,7 @@ export default function OwnerRecords({
                 <form action={updateOwnerMovement} className="space-y-3.5">
                   <input type="hidden" name="id" value={m.id} />
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <FieldLabel label="Quantity">
+                    <FieldLabel label="ብዛት">
                       <input
                         className={numInputClass}
                         name="quantity"
@@ -701,7 +701,7 @@ export default function OwnerRecords({
                       />
                     </FieldLabel>
 
-                    <FieldLabel label="Reason">
+                    <FieldLabel label="ምክንያት">
                       <input
                         className={inputClass}
                         name="reason"

@@ -21,7 +21,7 @@ interface Product {
 }
 
 const money = (val: number) =>
-  `ETB ${Number(val || 0).toLocaleString('en-KE', { maximumFractionDigits: 2 })}`;
+  `${Number(val || 0).toLocaleString('en-KE', { maximumFractionDigits: 2 })} ብር`;
 
 export default function PricesView({ initialProducts }: { initialProducts: Product[] }) {
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -156,7 +156,7 @@ export default function PricesView({ initialProducts }: { initialProducts: Produ
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <label className="text-[11px] text-slate-600 font-semibold">
-                        Unit Price (ETB)
+                        የአንዱ ዋጋ (ብር)
                       </label>
                       <div className="flex gap-1">
                         <button
@@ -196,7 +196,7 @@ export default function PricesView({ initialProducts }: { initialProducts: Produ
 
                   <div>
                     <label className="text-[11px] text-slate-600 font-semibold block mb-1">
-                      Low Stock Threshold
+                      ዝቅተኛ የክምችት ገደብ
                     </label>
                     <input
                       type="number"
@@ -224,7 +224,7 @@ export default function PricesView({ initialProducts }: { initialProducts: Produ
                       onClick={() => setEditingId(null)}
                       className="erp-btn-secondary py-2 px-3 text-xs cursor-pointer"
                     >
-                      Cancel
+                      ይቅር
                     </button>
                   </div>
                 </div>

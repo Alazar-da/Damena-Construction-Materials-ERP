@@ -96,20 +96,20 @@ export default async function AdminOverview({
 
   let startDate = today;
   let endDate = today;
-  let periodLabel = 'ዛሬ (Today)';
+  let periodLabel = 'ዛሬ';
 
   if (period === 'yesterday') {
     startDate = addDays(today, -1);
     endDate = addDays(today, -1);
-    periodLabel = 'ትናንት (Yesterday)';
+    periodLabel = 'ትናንት';
   } else if (period === 'weekly') {
     startDate = addDays(today, -7);
     endDate = today;
-    periodLabel = 'ይህ ሳምንት (This Week)';
+    periodLabel = 'ይህ ሳምንት';
   } else if (period === 'monthly') {
     startDate = `${today.slice(0, 7)}-01`;
     endDate = today;
-    periodLabel = 'ይህ ወር (This Month)';
+    periodLabel = 'ይህ ወር';
   }
 
   const nextDate = addDays(endDate, 1);
@@ -288,10 +288,10 @@ export default async function AdminOverview({
           className="grid grid-cols-4 w-full md:w-auto bg-slate-100 p-1 sm:p-1.5 rounded-xl sm:rounded-2xl border border-slate-200/80 gap-1 shrink-0"
         >
           {[
-            { id: 'today', mobileLabel: 'ዛሬ', fullLabel: 'ዛሬ (Today)' },
-            { id: 'yesterday', mobileLabel: 'ትናንት', fullLabel: 'ትናንት (Yesterday)' },
-            { id: 'weekly', mobileLabel: 'ሳምንት', fullLabel: 'ይህ ሳምንት (Week)' },
-            { id: 'monthly', mobileLabel: 'ወር', fullLabel: 'ይህ ወር (Month)' },
+            { id: 'today', mobileLabel: 'ዛሬ', fullLabel: 'ዛሬ' },
+            { id: 'yesterday', mobileLabel: 'ትናንት', fullLabel: 'ትናንት' },
+            { id: 'weekly', mobileLabel: 'ሳምንት', fullLabel: 'ይህ ሳምንት' },
+            { id: 'monthly', mobileLabel: 'ወር', fullLabel: 'ይህ ወር' },
           ].map((tab) => {
             const isActive = period === tab.id;
             return (
@@ -316,7 +316,7 @@ export default async function AdminOverview({
       <div className="space-y-2.5 sm:space-y-3">
         <div className="flex items-center justify-between px-1">
           <h2 className="text-xs sm:text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
-            <span>💵 የገንዘብ ፍሰት (Money Flow)</span>
+            <span>💵 የገንዘብ ፍሰት</span>
             <span className="text-[11px] sm:text-xs text-slate-400 font-normal font-mono">· {periodLabel}</span>
           </h2>
         </div>
@@ -371,7 +371,7 @@ export default async function AdminOverview({
           <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-slate-200/90 shadow-xs flex flex-col justify-between">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                ጠቅላላ የገባ ገቢ (Money In)
+                ጠቅላላ የገባ ገቢ
               </span>
               <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
                 <ArrowDownLeft className="w-5 h-5" />
@@ -392,7 +392,7 @@ export default async function AdminOverview({
           <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-slate-200/90 shadow-xs flex flex-col justify-between">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                የወጣ ወጪ (Money Out)
+                የወጣ ወጪ
               </span>
               <div className="w-9 h-9 rounded-xl bg-rose-50 text-rose-700 flex items-center justify-center font-bold">
                 <ArrowUpRight className="w-5 h-5" />
@@ -496,7 +496,7 @@ export default async function AdminOverview({
         <div className="pb-2 border-b border-slate-100 flex items-center justify-between">
           <div>
             <h2 className="text-xs sm:text-sm font-black text-slate-900">
-              በግቢው ያለ ክምችት (Stock at a Glance)
+              በግቢው ያለ ክምችት
             </h2>
             <p className="text-[10px] sm:text-[11px] text-slate-400">የምርቶች እና የሲሚንቶ ክምችት መጠን</p>
           </div>
@@ -524,7 +524,7 @@ export default async function AdminOverview({
                     {displayProductName(cementProduct.name)}
                   </div>
                   <div className="text-[10px] text-amber-700 font-semibold mt-0.5">
-                    የመጋዘን ጥሬ እቃ (Raw Material)
+                    የመጋዘን ጥሬ እቃ
                   </div>
                 </div>
               </div>
@@ -532,7 +532,7 @@ export default async function AdminOverview({
                 <div className="text-lg font-black font-mono text-slate-900">
                   {Number(cementProduct.stock_on_hand || 0).toLocaleString()}
                 </div>
-                <div className="text-[10px] text-slate-400 font-mono">ከረጢት (Bags)</div>
+                <div className="text-[10px] text-slate-400 font-mono">ከረጢት</div>
               </div>
             </div>
           )}
@@ -560,7 +560,7 @@ export default async function AdminOverview({
                   <div className="text-base font-black font-mono text-slate-900 mt-0.5">
                     {stock.toLocaleString()}
                   </div>
-                  <div className="text-[10px] text-slate-400 font-mono">ክምችት (Stock)</div>
+                  <div className="text-[10px] text-slate-400 font-mono">ክምችት</div>
                 </div>
               );
             })}

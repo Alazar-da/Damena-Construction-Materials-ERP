@@ -133,7 +133,7 @@ function ManagerShellInner({
                 DAMENA
               </span>
               <span className="text-[10px] font-mono text-amber-400 font-semibold uppercase tracking-wider block mt-0.5">
-                ስራ አስኪያጅ (Manager)
+                ስራ አስኪያጅ
               </span>
             </div>
           </Link>
@@ -211,7 +211,7 @@ function ManagerShellInner({
           <form action={logout} className="w-full">
             <button
               type="submit"
-              title="ውጣ (Sign out)"
+              title="ውጣ"
               className={`w-full flex items-center rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-900/60 transition-colors cursor-pointer ${
                 'md:max-xl:h-10 md:max-xl:justify-center'
               } ${
@@ -250,7 +250,7 @@ function ManagerShellInner({
                 DAMENA
               </span>
               <span className="text-[10px] font-mono text-amber-400 font-semibold uppercase tracking-wider block mt-0.5">
-                ስራ አስኪያጅ (Manager)
+                ስራ አስኪያጅ
               </span>
             </div>
           </div>

@@ -25,7 +25,7 @@ export async function createAdmin(formData: FormData) {
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
-  if (!url || !key) redirect('/owner/users?error=' + encodeURIComponent('የSupabase አስተዳዳሪ ቁልፍ (Service Key) አልተዘጋጀም።'));
+  if (!url || !key) redirect('/owner/users?error=' + encodeURIComponent('የሰርቨር ቁልፍ አልተዘጋጀም።'));
 
   const admin = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
   const { data, error } = await admin.auth.admin.createUser({
@@ -52,7 +52,7 @@ export async function createAdmin(formData: FormData) {
     if (!accountId) redirect('/owner/users?error=' + encodeURIComponent('የተመዘገበው ተጠቃሚ አልተገኘም።'));
 
     const { data: existingProfile } = await client.from('profiles').select('role').eq('id', accountId).maybeSingle();
-    if (existingProfile?.role === 'super_admin') redirect('/owner/users?error=' + encodeURIComponent('የዋና አስተዳዳሪ (Super Admin) መለያን እዚህ ማስተካከል አይቻልም።'));
+    if (existingProfile?.role === 'super_admin') redirect('/owner/users?error=' + encodeURIComponent('የዋና ባለቤት መለያን እዚህ ማስተካከል አይቻልም።'));
 
     const { error: updateError } = await admin.auth.admin.updateUserById(accountId, {
       password,
@@ -69,5 +69,5 @@ export async function createAdmin(formData: FormData) {
     p_display_name: displayName || email.split('@')[0],
   });
   if (profileError) redirect(`/owner/users?error=${encodeURIComponent(profileError.message)}`);
-  redirect(`/owner/users?success=${encodeURIComponent(restoredExisting ? 'የነበረው መለያ የይለፍ ቃል ተቀይሮ ተስተካክሏል።' : validRole === 'manager' ? 'የስራ አስኪያጅ (Manager) መለያ በተሳካ ሁኔታ ተፈጥሯል!' : 'የአስተዳዳሪ/ሰራተኛ (Admin) መለያ በተሳካ ሁኔታ ተፈጥሯል!')}`);
+  redirect(`/owner/users?success=${encodeURIComponent(restoredExisting ? 'የነበረው መለያ የይለፍ ቃል ተቀይሮ ተስተካክሏል።' : validRole === 'manager' ? 'የስራ አስኪያጅ መለያ በተሳካ ሁኔታ ተፈጥሯል!' : 'የአስተዳዳሪ መለያ በተሳካ ሁኔታ ተፈጥሯል!')}`);
 }
