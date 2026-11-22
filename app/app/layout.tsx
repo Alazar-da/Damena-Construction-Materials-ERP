@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation';
 import { db } from '@/lib/supabase/server';
 import AppShell from './app-shell';
 
@@ -7,14 +8,25 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     data: { user },
   } = await client.auth.getUser();
 
-  const { data: profile } = user
-    ? await client.from('profiles').select('display_name,role').eq('id', user.id).maybeSingle()
-    : { data: null };
+  if (!user) redirect('/');
 
+  const { data: profile } = await client
+    .from('profiles')
+    .select('display_name,role')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  const userRole = user.app_metadata?.role || user.user_metadata?.role;
   const isSuperAdmin =
-    user?.app_metadata?.role === 'super_admin' ||
-    user?.user_metadata?.role === 'super_admin' ||
+    user.app_metadata?.role === 'super_admin' ||
+    user.user_metadata?.role === 'super_admin' ||
     profile?.role === 'super_admin';
+
+  const isManager = !isSuperAdmin && userRole === 'manager';
+
+  if (isManager) {
+    redirect('/manager');
+  }
 
   return (
     <AppShell

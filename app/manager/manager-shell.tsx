@@ -16,8 +16,6 @@ import {
   ShieldCheck,
   LogOut,
   UserRound,
-  ArrowRight,
-  TrendingUp,
 } from 'lucide-react';
 import { logout } from '@/app/login/actions';
 import { HeaderSlotProvider, useHeaderSlot } from '@/components/header-slot-context';
@@ -40,7 +38,6 @@ interface ManagerShellProps {
   children: React.ReactNode;
   userEmail?: string;
   displayName?: string;
-  isSuperAdmin?: boolean;
 }
 
 export default function ManagerShell(props: ManagerShellProps) {
@@ -55,7 +52,6 @@ function ManagerShellInner({
   children,
   userEmail,
   displayName,
-  isSuperAdmin = false,
 }: ManagerShellProps) {
   const { headerCenter, headerRight } = useHeaderSlot();
   const pathname = usePathname();
@@ -212,48 +208,6 @@ function ManagerShellInner({
             {!isCollapsed && <span className="truncate text-sm font-semibold">መገለጫ</span>}
           </Link>
 
-          {/* Switch to Staff Operations Desk */}
-          <Link
-            href="/app"
-            title="የሰራተኞች የስራ ጠረጴዛ"
-            className={`transition-colors cursor-pointer ${
-              'md:max-xl:w-14 md:max-xl:h-12 md:max-xl:flex md:max-xl:flex-col md:max-xl:items-center md:max-xl:justify-center md:max-xl:rounded-xl md:max-xl:text-slate-300 md:max-xl:hover:bg-slate-900/80'
-            } ${
-              'xl:flex xl:items-center xl:rounded-lg xl:text-xs xl:text-slate-300 xl:hover:text-white xl:hover:bg-slate-900/60 xl:p-2'
-            } ${
-              isCollapsed ? 'xl:justify-center' : 'xl:gap-2.5'
-            }`}
-          >
-            <ArrowRight className="w-4 h-4 text-amber-400 shrink-0" />
-            {!isCollapsed && (
-              <span className="truncate text-xs font-semibold hidden xl:inline">
-                የሰራተኞች ገጽ
-              </span>
-            )}
-          </Link>
-
-          {/* Super Admin Switch to Owner Portal */}
-          {isSuperAdmin && (
-            <Link
-              href="/owner"
-              title="የባለቤት ፖርታል"
-              className={`transition-colors cursor-pointer text-emerald-400 ${
-                'md:max-xl:w-14 md:max-xl:h-12 md:max-xl:flex md:max-xl:flex-col md:max-xl:items-center md:max-xl:justify-center md:max-xl:rounded-xl md:max-xl:hover:bg-slate-900/80'
-              } ${
-                'xl:flex xl:items-center xl:rounded-lg xl:text-xs xl:hover:bg-slate-900/60 xl:p-2'
-              } ${
-                isCollapsed ? 'xl:justify-center' : 'xl:gap-2.5'
-              }`}
-            >
-              <TrendingUp className="w-4 h-4 shrink-0" />
-              {!isCollapsed && (
-                <span className="truncate text-xs font-semibold hidden xl:inline">
-                  የባለቤት ፖርታል
-                </span>
-              )}
-            </Link>
-          )}
-
           <form action={logout} className="w-full">
             <button
               type="submit"
@@ -357,26 +311,6 @@ function ManagerShellInner({
             <UserRound className="h-4 w-4 text-blue-300" />
             <span>መገለጫ</span>
           </Link>
-
-          <Link
-            href="/app"
-            onClick={() => setIsMobileOpen(false)}
-            className="flex min-h-11 items-center gap-2.5 rounded-xl px-3 text-sm font-semibold text-amber-400 hover:bg-slate-900 transition-colors"
-          >
-            <ArrowRight className="h-4 w-4 text-amber-400" />
-            <span>የሰራተኞች ገጽ (Staff App)</span>
-          </Link>
-
-          {isSuperAdmin && (
-            <Link
-              href="/owner"
-              onClick={() => setIsMobileOpen(false)}
-              className="flex min-h-11 items-center gap-2.5 rounded-xl px-3 text-sm font-semibold text-emerald-400 hover:bg-slate-900 transition-colors"
-            >
-              <TrendingUp className="h-4 w-4 text-emerald-400" />
-              <span>የባለቤት ፖርታል (Owner)</span>
-            </Link>
-          )}
 
           <form action={logout}>
             <button

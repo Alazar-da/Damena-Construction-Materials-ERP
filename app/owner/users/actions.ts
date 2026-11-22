@@ -16,6 +16,9 @@ export async function createAdmin(formData: FormData) {
   const displayName = String(formData.get('display_name') || '').trim();
   const password = String(formData.get('password') || '');
   const confirmPassword = String(formData.get('confirm_password') || '');
+  const role = String(formData.get('role') || 'manager').toLowerCase();
+  const validRole = role === 'admin' ? 'admin' : 'manager';
+
   if (!email || !email.includes('@')) redirect('/owner/users?error=' + encodeURIComponent('እባክዎ ትክክለኛ ኢሜይል ያስገቡ።'));
   if (password.length < 8) redirect('/owner/users?error=' + encodeURIComponent('የይለፍ ቃሉ ቢያንስ 8 ቁምፊ መሆን አለበት።'));
   if (password !== confirmPassword) redirect('/owner/users?error=' + encodeURIComponent('የይለፍ ቃሎቹ አይመሳሰሉም።'));
@@ -29,7 +32,8 @@ export async function createAdmin(formData: FormData) {
     email,
     password,
     email_confirm: true,
-    user_metadata: { display_name: displayName || email.split('@')[0], role: 'admin' },
+    user_metadata: { display_name: displayName || email.split('@')[0], role: validRole },
+    app_metadata: { role: validRole },
   });
   let accountId = data.user?.id;
   let restoredExisting = false;
@@ -53,7 +57,8 @@ export async function createAdmin(formData: FormData) {
     const { error: updateError } = await admin.auth.admin.updateUserById(accountId, {
       password,
       email_confirm: true,
-      user_metadata: { display_name: displayName || email.split('@')[0], role: 'admin' },
+      user_metadata: { display_name: displayName || email.split('@')[0], role: validRole },
+      app_metadata: { role: validRole },
     });
     if (updateError) redirect(`/owner/users?error=${encodeURIComponent(updateError.message)}`);
     restoredExisting = true;
@@ -64,5 +69,5 @@ export async function createAdmin(formData: FormData) {
     p_display_name: displayName || email.split('@')[0],
   });
   if (profileError) redirect(`/owner/users?error=${encodeURIComponent(profileError.message)}`);
-  redirect(`/owner/users?success=${encodeURIComponent(restoredExisting ? 'የነበረው የስራ አስኪያጅ መለያ የይለፍ ቃል ተቀይሮ ተስተካክሏል።' : 'የስራ አስኪያጅ (Manager) መለያ በተሳካ ሁኔታ ተፈጥሯል!')}`);
+  redirect(`/owner/users?success=${encodeURIComponent(restoredExisting ? 'የነበረው መለያ የይለፍ ቃል ተቀይሮ ተስተካክሏል።' : validRole === 'manager' ? 'የስራ አስኪያጅ (Manager) መለያ በተሳካ ሁኔታ ተፈጥሯል!' : 'የአስተዳዳሪ/ሰራተኛ (Admin) መለያ በተሳካ ሁኔታ ተፈጥሯል!')}`);
 }

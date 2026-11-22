@@ -149,17 +149,18 @@ function AppShellInner({
             }`}
           >
             <div className="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-200 shrink-0">
-              <HardHat className="w-4 h-4 text-slate-300" />
+              <HardHat className="w-4 h-4 text-sky-400" />
             </div>
 
             {/* Title visible on PC when not collapsed */}
-            <span
-              className={`text-sm font-bold tracking-wider text-white font-mono truncate hidden md:max-xl:hidden ${
-                isCollapsed ? 'xl:hidden' : 'xl:inline'
-              }`}
-            >
-              DAMENA
-            </span>
+            <div className={`min-w-0 hidden md:max-xl:hidden ${isCollapsed ? 'xl:hidden' : 'xl:block'}`}>
+              <span className="text-sm font-bold tracking-wider text-white font-mono block leading-none">
+                DAMENA
+              </span>
+              <span className="text-[10px] font-mono text-sky-400 font-semibold uppercase tracking-wider block mt-0.5">
+                አስተዳዳሪ (Admin)
+              </span>
+            </div>
           </Link>
         </div>
 
@@ -310,11 +311,16 @@ function AppShellInner({
         <div className="flex items-center justify-between h-16 px-4 border-b border-slate-800/60">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-200">
-              <HardHat className="w-4 h-4 text-slate-300" />
+              <HardHat className="w-4 h-4 text-sky-400" />
             </div>
-            <span className="text-sm font-bold tracking-wider text-white font-mono">
-              DAMENA
-            </span>
+            <div>
+              <span className="text-sm font-bold tracking-wider text-white font-mono block leading-none">
+                DAMENA
+              </span>
+              <span className="text-[10px] font-mono text-sky-400 font-semibold uppercase tracking-wider block mt-0.5">
+                አስተዳዳሪ (Admin)
+              </span>
+            </div>
           </div>
           <button
             onClick={() => setIsMobileOpen(false)}
@@ -439,9 +445,14 @@ function AppShellInner({
             </div>
 
             {/* PC Brand / Nav Title */}
-            <span className="font-bold text-slate-900 text-base tracking-tight md:max-xl:hidden">
-              {currentNav.label}
-            </span>
+            <div className="flex items-center gap-2 md:max-xl:hidden">
+              <span className="font-black text-slate-900 text-base tracking-tight">
+                {currentNav.label}
+              </span>
+              <span className="px-2 py-0.5 rounded-md bg-sky-50 text-sky-800 text-[10px] font-bold border border-sky-200/60 hidden sm:inline-block">
+                አስተዳዳሪ
+              </span>
+            </div>
           </div>
 
           {/* TABLET-ONLY: Center Header Slot (Moves Sales Product vs Service choices to the Header!) */}

@@ -7,7 +7,6 @@ import {
   TrendingUp,
   Tag,
   ChartNoAxesCombined,
-  ArrowLeft,
   ChevronLeft,
   ChevronDown,
   HardHat,
@@ -188,24 +187,6 @@ function OwnerShellInner({ children, userEmail, displayName }: OwnerShellProps) 
             {!isCollapsed && <span className="truncate text-sm font-semibold">መገለጫ</span>}
           </Link>
 
-          <Link
-            href="/app"
-            title="የሰራተኞች መተግበሪያ"
-            className={`transition-colors cursor-pointer ${
-              'md:max-xl:w-14 md:max-xl:h-12 md:max-xl:flex md:max-xl:flex-col md:max-xl:items-center md:max-xl:justify-center md:max-xl:rounded-xl md:max-xl:text-slate-300 md:max-xl:hover:bg-slate-900/80'
-            } ${
-              'xl:flex xl:items-center xl:rounded-lg xl:text-xs xl:text-slate-300 xl:hover:text-white xl:hover:bg-slate-900/60 xl:p-2'
-            } ${
-              isCollapsed ? 'xl:justify-center' : 'xl:gap-2.5'
-            }`}
-          >
-            <ArrowLeft className="w-4 h-4 text-slate-400" />
-            <span className="text-[9px] mt-0.5 font-semibold md:max-xl:inline hidden">ሰራተኞች</span>
-            {!isCollapsed && (
-              <span className="font-semibold text-slate-200 truncate hidden xl:inline">የሰራተኞች መተግበሪያ</span>
-            )}
-          </Link>
-
           <form action={logout} className="w-full flex justify-center">
             <button
               type="submit"
@@ -296,24 +277,6 @@ function OwnerShellInner({ children, userEmail, displayName }: OwnerShellProps) 
           >
             <UserRound className="h-4 w-4 text-blue-300" />
             <span>መገለጫ</span>
-          </Link>
-
-          <Link
-            href="/manager"
-            onClick={() => setIsMobileOpen(false)}
-            className="flex min-h-11 items-center gap-2.5 rounded-xl px-3 text-sm font-semibold text-amber-400 hover:bg-slate-900 transition-colors"
-          >
-            <ShieldCheck className="h-4 w-4 text-amber-400" />
-            <span>የስራ አስኪያጅ ገጽ (/manager)</span>
-          </Link>
-
-          <Link
-            href="/app"
-            onClick={() => setIsMobileOpen(false)}
-            className="flex min-h-11 items-center gap-2.5 rounded-xl px-3 text-sm font-semibold text-slate-300 hover:bg-slate-900 transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4 text-slate-400" />
-            <span>የሰራተኞች ገጽ (/app)</span>
           </Link>
 
           <form action={logout}>
@@ -408,25 +371,6 @@ function OwnerShellInner({ children, userEmail, displayName }: OwnerShellProps) 
                 {(displayName || userEmail || 'O').charAt(0).toUpperCase()}
               </div>
               <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-200" />
-            </Link>
-          </div>
-
-          {/* Switch to Manager and Staff App Buttons */}
-          <div className="flex items-center gap-2 md:max-xl:hidden">
-            <Link
-              href="/manager"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-amber-200 bg-amber-50 text-xs font-bold text-amber-900 hover:bg-amber-100 transition-colors"
-            >
-              <ShieldCheck className="w-3.5 h-3.5 text-amber-700" />
-              <span>የስራ አስኪያጅ ገጽ</span>
-            </Link>
-            <Link
-              href="/app"
-              className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">ወደ </span>
-              <span>የሰራተኞች ገጽ</span>
             </Link>
           </div>
         </header>

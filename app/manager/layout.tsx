@@ -18,10 +18,17 @@ export default async function ManagerLayout({ children }: { children: React.Reac
     .eq('id', user.id)
     .maybeSingle();
 
+  const userRole = user.app_metadata?.role || user.user_metadata?.role;
   const isSuperAdmin =
     profile?.role === 'super_admin' ||
     user.app_metadata?.role === 'super_admin' ||
     user.user_metadata?.role === 'super_admin';
+
+  const isManager = isSuperAdmin || userRole === 'manager';
+
+  if (!isManager) {
+    redirect('/app');
+  }
 
   return (
     <ManagerShell
@@ -31,7 +38,6 @@ export default async function ManagerLayout({ children }: { children: React.Reac
           ? profile.display_name
           : user.user_metadata?.display_name || user.email?.split('@')[0] || 'Manager'
       }
-      isSuperAdmin={Boolean(isSuperAdmin)}
     >
       {children}
     </ManagerShell>

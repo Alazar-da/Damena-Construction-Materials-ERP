@@ -16,12 +16,16 @@ export default async function OwnerLayout({ children }: { children: React.ReactN
     .eq('id', user.id)
     .maybeSingle();
 
+  const userRole = user.app_metadata?.role || user.user_metadata?.role;
   const isSuperAdmin =
     profile?.role === 'super_admin' ||
     user.app_metadata?.role === 'super_admin' ||
     user.user_metadata?.role === 'super_admin';
 
-  if (!isSuperAdmin) redirect('/app');
+  if (!isSuperAdmin) {
+    if (userRole === 'manager') redirect('/manager');
+    redirect('/app');
+  }
 
   // Keep profiles table role in sync
   if (profile && profile.role !== 'super_admin') {

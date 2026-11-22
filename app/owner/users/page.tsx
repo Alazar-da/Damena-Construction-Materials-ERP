@@ -11,6 +11,7 @@ import {
   AlertCircle,
   Crown,
   Info,
+  Layers,
 } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
@@ -30,14 +31,26 @@ export default async function OwnerUsersPage({
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
   const emailById = new Map<string, string>();
+  const roleById = new Map<string, string>();
 
   if (url && key) {
     const admin = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
     const { data } = await admin.auth.admin.listUsers({ perPage: 1000 });
-    data?.users.forEach((account) => emailById.set(account.id, account.email || ''));
+    data?.users.forEach((account) => {
+      emailById.set(account.id, account.email || '');
+      const metaRole = account.app_metadata?.role || account.user_metadata?.role;
+      if (metaRole) {
+        roleById.set(account.id, metaRole);
+      }
+    });
   }
 
-  const managerCount = (profiles || []).filter((p) => p.role === 'admin').length;
+  const managerCount = (profiles || []).filter(
+    (p) => (roleById.get(p.id) || p.role) === 'manager'
+  ).length;
+  const adminCount = (profiles || []).filter(
+    (p) => (roleById.get(p.id) || p.role) === 'admin'
+  ).length;
   const superAdminCount = (profiles || []).filter((p) => p.role === 'super_admin').length;
 
   return (
@@ -52,26 +65,33 @@ export default async function OwnerUsersPage({
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight font-sans">
-            የስራ አስኪያጅና ተጠቃሚዎች መለያ
+            የተጠቃሚዎች እና ስራ አስኪያጆች መለያ
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            ለስራ አስኪያጅ (Manager) መለያ ይፍጠሩ እና የመግቢያ የይለፍ ቃል ይስጡ
+            የስራ አስኪያጅ (Manager) ወይም የአስተዳዳሪ (Admin) መለያዎችን ይፍጠሩ እና ያስተዳድሩ
           </p>
         </div>
 
         {/* Counts summary badge */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <div className="bg-amber-50 border border-amber-200/80 rounded-2xl px-3 py-2 flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-amber-700" />
             <div>
-              <div className="text-[10px] font-bold text-amber-800 uppercase">ስራ አስኪያጆች</div>
+              <div className="text-[10px] font-bold text-amber-800 uppercase">ስራ አስኪያጅ</div>
               <div className="text-sm font-black font-mono text-amber-950">{managerCount}</div>
+            </div>
+          </div>
+          <div className="bg-blue-50 border border-blue-200/80 rounded-2xl px-3 py-2 flex items-center gap-2">
+            <Layers className="w-4 h-4 text-blue-700" />
+            <div>
+              <div className="text-[10px] font-bold text-blue-800 uppercase">አስተዳዳሪ</div>
+              <div className="text-sm font-black font-mono text-blue-950">{adminCount}</div>
             </div>
           </div>
           <div className="bg-violet-50 border border-violet-200/80 rounded-2xl px-3 py-2 flex items-center gap-2">
             <Crown className="w-4 h-4 text-violet-700" />
             <div>
-              <div className="text-[10px] font-bold text-violet-800 uppercase">ባለቤቶች</div>
+              <div className="text-[10px] font-bold text-violet-800 uppercase">ባለቤት</div>
               <div className="text-sm font-black font-mono text-violet-950">{superAdminCount}</div>
             </div>
           </div>
@@ -79,11 +99,16 @@ export default async function OwnerUsersPage({
       </div>
 
       {/* Explanatory Info Card */}
-      <div className="bg-blue-50/70 border border-blue-200/80 rounded-2xl p-4 flex items-start gap-3 shadow-2xs">
-        <Info className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-        <div className="text-xs sm:text-sm text-blue-950 leading-relaxed">
-          <span className="font-bold block mb-0.5">ስራ አስኪያጅ (Manager) እንዴት ይሰራል?</span>
-          እዚህ የሚፈጥሩት መለያ በቀጥታ ወደ <strong>/manager</strong> ፖርታል የመግባት ስልጣን ያገኛል። ስራ አስኪያጁ በስልክ ወይም በኮምፒውተር ገብቶ አጠቃላይ እይታውን፣ የምርት ዋጋዎችን፣ ሪፖርቶችን እና ማሽነሪዎችን ማስተዳደር ይችላል።
+      <div className="bg-slate-900 text-white rounded-2xl p-4 sm:p-5 flex items-start gap-3.5 shadow-sm">
+        <Info className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+        <div className="text-xs sm:text-sm text-slate-200 leading-relaxed space-y-1">
+          <span className="font-bold text-white block">የመለያዎች ልዩነትና አሰራር፦</span>
+          <p>
+            • <strong>ስራ አስኪያጅ (Manager)</strong>፦ በመግቢያ ገጹ ሲገባ በቀጥታ ወደ <strong>/manager</strong> ፖርታል ይወሰዳል። (አጠቃላይ እይታ፣ ዋጋዎች፣ ሪፖርቶች እና ማሽነሪ ብቻ ያገኛል)።
+          </p>
+          <p>
+            • <strong>አስተዳዳሪ (Admin)</strong>፦ በመግቢያ ገጹ ሲገባ በቀጥታ ወደ <strong>/app</strong> የስራ ጠረጴዛ ይወሰዳል። (ሲሚንቶ፣ ምርት፣ ሽያጭ፣ ደመወዝ ያስተዳድራል)።
+          </p>
         </div>
       </div>
 
@@ -107,29 +132,47 @@ export default async function OwnerUsersPage({
         </div>
       )}
 
-      {/* 2. CREATE MANAGER FORM */}
+      {/* 2. CREATE ACCOUNT FORM WITH ROLE DROPDOWN */}
       <form action={createAdmin} className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-5 sm:p-7 space-y-5">
         <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold shrink-0 shadow-2xs">
+            <div className="w-9 h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold shrink-0 shadow-2xs">
               <UserPlus className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-base font-black text-slate-900">አዲስ የስራ አስኪያጅ (Manager) መለያ ፍጠር</h2>
-              <p className="text-xs text-slate-400">ኢሜይልና ይለፍ ቃል በማስገባት ለአስኪያጁ መለያ ያዘጋጁ</p>
+              <h2 className="text-base font-black text-slate-900">አዲስ መለያ ፍጠር</h2>
+              <p className="text-xs text-slate-400">የመለያውን ሚና በመምረጥ ኢሜይልና ይለፍ ቃል ይመዝግቡ</p>
             </div>
           </div>
-          <span className="px-2.5 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-black font-mono">
-            ሚና፦ ስራ አስኪያጅ
-          </span>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
+          {/* User Role Selection Dropdown */}
+          <div className="space-y-1.5 sm:col-span-2">
+            <label className="text-xs font-black text-slate-800 uppercase tracking-wider block flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-slate-400" />
+              <span>የመለያ ዓይነት / ሚና ይምረጡ (Choose Role) <span className="text-rose-500">*</span></span>
+            </label>
+            <select
+              name="role"
+              required
+              defaultValue="manager"
+              className="erp-input h-12 px-3.5 text-sm font-bold text-slate-900 w-full bg-slate-50 border border-slate-300 rounded-xl cursor-pointer focus:bg-white"
+            >
+              <option value="manager">
+                💼 ስራ አስኪያጅ (Manager) — ወደ /manager ፖርታል (አጠቃላይ እይታ፣ ዋጋዎች፣ ሪፖርቶች፣ ማሽነሪ)
+              </option>
+              <option value="admin">
+                👷 አስተዳዳሪ / ኦፕሬተር (Admin) — ወደ /app የስራ ጠረጴዛ (ሲሚንቶ፣ ምርት፣ ሽያጭ፣ ደመወዝ)
+              </option>
+            </select>
+          </div>
+
           {/* Display Name */}
           <div className="space-y-1.5">
             <label className="text-xs font-black text-slate-800 uppercase tracking-wider block flex items-center gap-1.5">
               <User className="w-3.5 h-3.5 text-slate-400" />
-              <span>የአስኪያጁ ሙሉ ስም</span>
+              <span>የተጠቃሚው ሙሉ ስም <span className="text-rose-500">*</span></span>
             </label>
             <input
               name="display_name"
@@ -153,7 +196,7 @@ export default async function OwnerUsersPage({
               type="email"
               required
               className="erp-input h-11 px-3 text-sm font-bold text-slate-900 w-full placeholder:text-slate-400 placeholder:font-normal"
-              placeholder="manager@example.com"
+              placeholder="user@example.com"
             />
           </div>
 
@@ -193,16 +236,15 @@ export default async function OwnerUsersPage({
         </div>
 
         <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="text-xs text-slate-500 flex items-center gap-1.5">
-            <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>ይህ መለያ ወዲያውኑ ወደ <strong>/manager</strong> ገጽ የመግባት ስልጣን ይሰጠዋል።</span>
-          </div>
+          <p className="text-xs text-slate-500">
+            ተጠቃሚው በዋናው የመግቢያ ገጽ ላይ ሲገባ በመረጡለት ሚና መሰረት በቀጥታ ወደ ሚመለከተው ፖርታል ይወሰዳል።
+          </p>
           <button
             type="submit"
-            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm transition-colors cursor-pointer shadow-xs"
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm transition-colors cursor-pointer shadow-xs shrink-0"
           >
             <UserPlus className="w-4 h-4" />
-            <span>የስራ አስኪያጅ መለያ ፍጠር</span>
+            <span>መለያውን ፍጠር</span>
           </button>
         </div>
       </form>
@@ -211,8 +253,8 @@ export default async function OwnerUsersPage({
       <section className="bg-white rounded-3xl border border-slate-200/90 shadow-xs overflow-hidden">
         <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
           <div>
-            <h2 className="text-sm sm:text-base font-black text-slate-900">የተመዘገቡ ተጠቃሚዎች እና ስራ አስኪያጆች</h2>
-            <p className="text-xs text-slate-400">በሲስተሙ ላይ የተፈጠሩ መለያዎች ዝርዝር</p>
+            <h2 className="text-sm sm:text-base font-black text-slate-900">የተመዘገቡ መለያዎች ዝርዝር</h2>
+            <p className="text-xs text-slate-400">በሲስተሙ ላይ የሚገኙ ባለቤቶች፣ ስራ አስኪያጆች እና አስተዳዳሪዎች</p>
           </div>
           <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700">
             {profiles?.length || 0} መለያዎች
@@ -223,6 +265,8 @@ export default async function OwnerUsersPage({
           {(profiles || []).map((profile) => {
             const isMe = profile.id === currentUser?.id;
             const isSuper = profile.role === 'super_admin';
+            const metaRole = roleById.get(profile.id);
+            const isManager = !isSuper && metaRole === 'manager';
             const email = emailById.get(profile.id) || 'Email unavailable';
 
             return (
@@ -230,10 +274,20 @@ export default async function OwnerUsersPage({
                 <div className="flex items-center gap-3 min-w-0">
                   <div
                     className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm shrink-0 ${
-                      isSuper ? 'bg-violet-100 text-violet-800' : 'bg-amber-100 text-amber-800'
+                      isSuper
+                        ? 'bg-violet-100 text-violet-800'
+                        : isManager
+                        ? 'bg-amber-100 text-amber-800'
+                        : 'bg-blue-100 text-blue-800'
                     }`}
                   >
-                    {isSuper ? <Crown className="w-5 h-5" /> : <ShieldCheck className="w-5 h-5" />}
+                    {isSuper ? (
+                      <Crown className="w-5 h-5" />
+                    ) : isManager ? (
+                      <ShieldCheck className="w-5 h-5" />
+                    ) : (
+                      <Layers className="w-5 h-5" />
+                    )}
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
@@ -255,10 +309,16 @@ export default async function OwnerUsersPage({
                     className={`rounded-full px-2.5 py-1 text-xs font-bold font-mono ${
                       isSuper
                         ? 'bg-violet-100 text-violet-800 border border-violet-200'
-                        : 'bg-amber-100 text-amber-900 border border-amber-200'
+                        : isManager
+                        ? 'bg-amber-100 text-amber-900 border border-amber-200'
+                        : 'bg-blue-100 text-blue-900 border border-blue-200'
                     }`}
                   >
-                    {isSuper ? 'ዋና ባለቤት (Super Admin)' : 'ስራ አስኪያጅ (Manager · /manager)'}
+                    {isSuper
+                      ? 'ዋና ባለቤት (Super Admin · /owner)'
+                      : isManager
+                      ? 'ስራ አስኪያጅ (Manager · /manager)'
+                      : 'አስተዳዳሪ (Admin · /app)'}
                   </span>
                   <span
                     className={`text-xs font-semibold px-2 py-0.5 rounded-full ${

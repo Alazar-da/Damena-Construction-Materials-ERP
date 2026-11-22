@@ -17,6 +17,7 @@ export async function login(formData: FormData) {
   const client = await db();
   const email = String(formData.get('email') || '').trim();
   const password = String(formData.get('password') || '').trim();
+  const selectedPortal = String(formData.get('portal') || '').toLowerCase();
 
   const { data, error } = await client.auth.signInWithPassword({
     email,
@@ -26,30 +27,49 @@ export async function login(formData: FormData) {
   if (error) {
     const msg = error.message || '';
     const lower = msg.toLowerCase();
+    const portalQuery = selectedPortal ? `&portal=${encodeURIComponent(selectedPortal)}` : '';
     if (lower.includes('fetch') || lower.includes('network') || lower.includes('connection')) {
-      redirect('/?error=connection');
+      redirect(`/?error=connection${portalQuery}`);
     }
     if (lower.includes('invalid login credentials')) {
-      redirect('/?error=credentials');
+      redirect(`/?error=credentials${portalQuery}`);
     }
-    redirect(`/?error=${encodeURIComponent(msg)}`);
+    redirect(`/?error=${encodeURIComponent(msg)}${portalQuery}`);
   }
 
-  const isSuperAuth =
-    data.user.app_metadata?.role === 'super_admin' ||
-    data.user.user_metadata?.role === 'super_admin';
+  const metaRole = data.user.app_metadata?.role || data.user.user_metadata?.role;
+  let isSuperAdmin = metaRole === 'super_admin';
+  const isManager = metaRole === 'manager';
 
-  if (isSuperAuth) {
+  if (!isSuperAdmin) {
+    const { data: profile } = await client
+      .from('profiles')
+      .select('role')
+      .eq('id', data.user.id)
+      .maybeSingle();
+
+    if (profile?.role === 'super_admin') {
+      isSuperAdmin = true;
+    }
+  }
+
+  if (isSuperAdmin) {
+    // If Super Admin specifically selected manager or admin portal tab, route there
+    if (selectedPortal === 'manager') {
+      redirect('/manager');
+    }
+    if (selectedPortal === 'admin') {
+      redirect('/app');
+    }
     redirect('/owner');
   }
 
-  const { data: profile } = await client
-    .from('profiles')
-    .select('role')
-    .eq('id', data.user.id)
-    .maybeSingle();
+  if (isManager) {
+    redirect('/manager');
+  }
 
-  redirect(profile?.role === 'super_admin' ? '/owner' : '/manager');
+  // Admin / Operations staff portal
+  redirect('/app');
 }
 
 export async function logout() {

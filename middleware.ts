@@ -71,23 +71,47 @@ export async function middleware(request: NextRequest) {
   if (isProtectedRoute && !user) {
     return NextResponse.redirect(new URL('/', request.url));
   }
-  if ((isRootRoute || isLoginRoute) && user && request.nextUrl.searchParams.get('setup') !== '1') {
-    const isSuperAdmin =
-      user.app_metadata?.role === 'super_admin' ||
-      user.user_metadata?.role === 'super_admin';
-    if (isSuperAdmin) {
-      return NextResponse.redirect(new URL('/owner', request.url));
-    }
-    const { data: profile } = await client
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .maybeSingle();
 
-    if (profile?.role === 'super_admin') {
-      return NextResponse.redirect(new URL('/owner', request.url));
+  if (user) {
+    const metaRole = user.app_metadata?.role || user.user_metadata?.role;
+    let isSuperAdmin = metaRole === 'super_admin';
+    const isManager = metaRole === 'manager';
+
+    if (!isSuperAdmin && !isManager) {
+      const { data: profile } = await client
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (profile?.role === 'super_admin') {
+        isSuperAdmin = true;
+      }
     }
-    return NextResponse.redirect(new URL('/manager', request.url));
+
+    const isAdmin = !isSuperAdmin && !isManager;
+
+    if ((isRootRoute || isLoginRoute) && request.nextUrl.searchParams.get('setup') !== '1') {
+      if (isSuperAdmin) {
+        return NextResponse.redirect(new URL('/owner', request.url));
+      }
+      if (isManager) {
+        return NextResponse.redirect(new URL('/manager', request.url));
+      }
+      return NextResponse.redirect(new URL('/app', request.url));
+    }
+
+    if (isOwnerRoute && !isSuperAdmin) {
+      return NextResponse.redirect(new URL(isManager ? '/manager' : '/app', request.url));
+    }
+
+    if (isAppRoute && isManager) {
+      return NextResponse.redirect(new URL('/manager', request.url));
+    }
+
+    if (isManagerRoute && isAdmin) {
+      return NextResponse.redirect(new URL('/app', request.url));
+    }
   }
 
   return response;
