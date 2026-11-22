@@ -26,7 +26,7 @@ grant select on public.owner_edit_log to authenticated;
 create or replace function public.log_owner_edit(p_entity_type text,p_entity_id uuid,p_before jsonb,p_after jsonb)
 returns void language plpgsql security definer set search_path=public as $$
 begin
-  if not exists(select 1 from public.profiles where id=auth.uid() and role='super_admin' and is_active) then raise exception 'owner access required'; end if;
+  if not exists(select 1 from public.profiles where id=auth.uid() and role in ('super_admin', 'manager') and is_active) then raise exception 'owner or manager access required'; end if;
   insert into public.owner_edit_log(actor_id,entity_type,entity_id,before_data,after_data)
   values(auth.uid(),p_entity_type,p_entity_id,coalesce(p_before,'{}'::jsonb),coalesce(p_after,'{}'::jsonb));
 end $$;
@@ -39,8 +39,8 @@ declare p public.products%rowtype; before_data jsonb;
 begin
   if auth.uid() is null or not exists(
     select 1 from public.profiles
-    where id=auth.uid() and role='super_admin' and is_active
-  ) then raise exception 'owner access required'; end if;
+    where id=auth.uid() and role in ('super_admin', 'manager') and is_active
+  ) then raise exception 'owner or manager access required'; end if;
   if p_price is null or p_price<0 then raise exception 'price cannot be negative'; end if;
   select * into p from public.products where id=p_product_id and is_active and category in ('brick','terazone') for update;
   if not found then raise exception 'only active block and terrace products can be repriced'; end if;
@@ -58,7 +58,7 @@ create or replace function public.update_product_threshold(p_product_id uuid,p_t
 returns void language plpgsql security definer set search_path=public as $$
 declare p public.products%rowtype; before_data jsonb;
 begin
-  if not exists(select 1 from public.profiles where id=auth.uid() and role='super_admin' and is_active) then raise exception 'owner access required'; end if;
+  if not exists(select 1 from public.profiles where id=auth.uid() and role in ('super_admin', 'manager') and is_active) then raise exception 'owner or manager access required'; end if;
   if p_threshold is null or p_threshold<0 then raise exception 'threshold cannot be negative'; end if;
   select * into p from public.products where id=p_product_id and is_active for update;
   if not found then raise exception 'product not found'; end if;

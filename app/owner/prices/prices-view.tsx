@@ -60,24 +60,28 @@ export default function PricesView({ initialProducts }: { initialProducts: Produ
 
   const handleSave = (productId: string) => {
     startTransition(async () => {
-      const priceNum = Number(editPrice);
-      const threshNum = Number(editThreshold);
+      try {
+        const priceNum = Number(editPrice);
+        const threshNum = Number(editThreshold);
 
-      if (!isNaN(priceNum) && priceNum >= 0) {
-        const fdPrice = new FormData();
-        fdPrice.append('product_id', productId);
-        fdPrice.append('selling_price', String(priceNum));
-        await updateProductPrice(fdPrice);
+        if (!isNaN(priceNum) && priceNum >= 0) {
+          const fdPrice = new FormData();
+          fdPrice.append('product_id', productId);
+          fdPrice.append('selling_price', String(priceNum));
+          await updateProductPrice(fdPrice);
+        }
+
+        if (!isNaN(threshNum) && threshNum >= 0) {
+          const fdThresh = new FormData();
+          fdThresh.append('product_id', productId);
+          fdThresh.append('low_stock_threshold', String(threshNum));
+          await updateProductThreshold(fdThresh);
+        }
+
+        setEditingId(null);
+      } catch (err) {
+        alert(err instanceof Error ? err.message : 'ዋጋ መቀየር አልተቻለም።');
       }
-
-      if (!isNaN(threshNum) && threshNum >= 0) {
-        const fdThresh = new FormData();
-        fdThresh.append('product_id', productId);
-        fdThresh.append('low_stock_threshold', String(threshNum));
-        await updateProductThreshold(fdThresh);
-      }
-
-      setEditingId(null);
     });
   };
 
