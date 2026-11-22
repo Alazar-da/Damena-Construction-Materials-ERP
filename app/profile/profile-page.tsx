@@ -3,8 +3,8 @@ import { CheckCircle2, KeyRound, Mail, UserRound } from 'lucide-react';
 import { updateDisplayName, updatePassword } from './actions';
 
 type ProfilePageProps = {
-  backHref: '/app' | '/owner';
-  profilePath: '/app/profile' | '/owner/profile';
+  backHref: '/app' | '/owner' | '/manager';
+  profilePath: '/app/profile' | '/owner/profile' | '/manager/profile';
   user: { email?: string; user_metadata?: { display_name?: string } };
   profile: { display_name: string | null } | null;
   searchParams: { error?: string; success?: string };

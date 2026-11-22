@@ -4,7 +4,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 export async function middleware(request: NextRequest) {
   const isAppRoute = request.nextUrl.pathname.startsWith('/app');
   const isOwnerRoute = request.nextUrl.pathname.startsWith('/owner');
-  const isProtectedRoute = isAppRoute || isOwnerRoute;
+  const isManagerRoute = request.nextUrl.pathname.startsWith('/manager');
+  const isProtectedRoute = isAppRoute || isOwnerRoute || isManagerRoute;
   const isRootRoute = request.nextUrl.pathname === '/';
   const isLoginRoute = request.nextUrl.pathname === '/login';
 
@@ -82,14 +83,16 @@ export async function middleware(request: NextRequest) {
       .select('role')
       .eq('id', user.id)
       .maybeSingle();
-    return NextResponse.redirect(
-      new URL(profile?.role === 'super_admin' ? '/owner' : '/app', request.url)
-    );
+
+    if (profile?.role === 'super_admin') {
+      return NextResponse.redirect(new URL('/owner', request.url));
+    }
+    return NextResponse.redirect(new URL('/manager', request.url));
   }
 
   return response;
 }
 
 export const config = {
-  matcher: ['/', '/app/:path*', '/owner/:path*', '/login'],
+  matcher: ['/', '/app/:path*', '/owner/:path*', '/manager/:path*', '/login'],
 };

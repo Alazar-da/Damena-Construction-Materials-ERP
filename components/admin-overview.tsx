@@ -73,7 +73,7 @@ const CERT_CONFIGS: ProductCertConfig[] = [
 ];
 
 interface AdminOverviewProps {
-  basePath: '/app' | '/owner';
+  basePath: '/app' | '/owner' | '/manager';
   title?: string;
   searchParams: Promise<{ period?: string }>;
 }
@@ -653,6 +653,19 @@ export default async function AdminOverview({
             <div className="min-w-0">
               <div className="text-xs font-black text-slate-900 truncate">የሲሚንቶ መጋዘን</div>
               <div className="text-[10px] text-slate-400 truncate">ክምችት እና እንቅስቃሴ</div>
+            </div>
+          </Link>
+        ) : basePath === '/manager' ? (
+          <Link
+            href="/app"
+            className="p-3 sm:p-3.5 rounded-2xl bg-white border border-slate-200/90 shadow-2xs hover:border-slate-300 active:scale-98 transition-all flex items-center gap-2.5 sm:gap-3"
+          >
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-50 text-amber-800 flex items-center justify-center shrink-0">
+              <Boxes className="w-4 h-4" />
+            </div>
+            <div className="min-w-0">
+              <div className="text-xs font-black text-slate-900 truncate">የሰራተኞች ገጽ</div>
+              <div className="text-[10px] text-slate-400 truncate">ወደ ሰራተኞች የስራ ጠረጴዛ</div>
             </div>
           </Link>
         ) : (

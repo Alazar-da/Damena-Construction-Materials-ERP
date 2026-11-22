@@ -49,7 +49,7 @@ export async function login(formData: FormData) {
     .eq('id', data.user.id)
     .maybeSingle();
 
-  redirect(profile?.role === 'super_admin' ? '/owner' : '/app');
+  redirect(profile?.role === 'super_admin' ? '/owner' : '/manager');
 }
 
 export async function logout() {

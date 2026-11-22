@@ -58,5 +58,6 @@ export async function addMachinery(formData: FormData) {
 
   revalidatePath('/app/machinery');
   revalidatePath('/owner/machinery');
+  revalidatePath('/manager/machinery');
   redirect(message(path, 'success', 'ማሽኑ ተመዝግቧል።'));
 }

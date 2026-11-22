@@ -49,7 +49,7 @@ export default function MachineryPage({
   searchParams,
 }: {
   machinery: Machinery[];
-  returnTo: '/app/machinery' | '/owner/machinery';
+  returnTo: '/app/machinery' | '/owner/machinery' | '/manager/machinery';
   title: string;
   description: string;
   searchParams: { error?: string; success?: string };

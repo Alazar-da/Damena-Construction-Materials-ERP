@@ -22,8 +22,6 @@ import {
   UserRound,
   Wrench,
   Bell,
-  Tag,
-  ChartNoAxesCombined,
 } from 'lucide-react';
 import { logout } from '@/app/login/actions';
 import { HeaderSlotProvider, useHeaderSlot } from '@/components/header-slot-context';
@@ -36,13 +34,11 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { href: '/app', label: 'አጠቃላይ እይታ', mobileLabel: 'አጠቃላይ', icon: LayoutDashboard },
+  { href: '/app', label: 'ዛሬ', mobileLabel: 'ዛሬ', icon: LayoutDashboard },
   { href: '/app/stock', label: 'የሲሚንቶ መጋዘን', mobileLabel: 'ሲሚንቶ', icon: Boxes },
   { href: '/app/production', label: 'ምርት', mobileLabel: 'ምርት', icon: Factory },
   { href: '/app/sales', label: 'ሽያጭ', mobileLabel: 'ሽያጭ', icon: ShoppingCart },
   { href: '/app/payroll', label: 'የደመወዝ ክፍያ', mobileLabel: 'ደመወዝ', icon: WalletCards },
-  { href: '/app/prices', label: 'ዋጋዎች', mobileLabel: 'ዋጋ', icon: Tag },
-  { href: '/app/reports', label: 'ሪፖርቶች', mobileLabel: 'ሪፖርት', icon: ChartNoAxesCombined },
   { href: '/app/machinery', label: 'ማሽነሪ', mobileLabel: 'ማሽነሪ', icon: Wrench },
 ];
 
@@ -262,6 +258,25 @@ function AppShellInner({
             {!isCollapsed && <span className="truncate text-sm font-semibold">መገለጫ</span>}
           </Link>
 
+          {/* Manager Portal Link */}
+          <Link
+            href="/manager"
+            title="የስራ አስኪያጅ ፖርታል"
+            className={`transition-colors cursor-pointer ${
+              'md:max-xl:w-14 md:max-xl:h-12 md:max-xl:flex md:max-xl:flex-col md:max-xl:items-center md:max-xl:justify-center md:max-xl:rounded-xl md:max-xl:text-amber-400 md:max-xl:hover:bg-slate-900/80'
+            } ${
+              'xl:flex xl:items-center xl:rounded-lg xl:text-xs xl:text-slate-300 xl:hover:text-white xl:hover:bg-slate-900/60 xl:p-2'
+            } ${
+              isCollapsed ? 'xl:justify-center' : 'xl:gap-2.5'
+            }`}
+          >
+            <ShieldCheck className="w-4 h-4 text-amber-400 shrink-0" />
+            <span className="text-[9px] mt-0.5 font-semibold md:max-xl:inline hidden">አስኪያጅ</span>
+            {!isCollapsed && (
+              <span className="font-semibold text-slate-200 truncate hidden xl:inline">ስራ አስኪያጅ</span>
+            )}
+          </Link>
+
           {/* Owner Portal Link */}
           {isSuperAdmin && (
             <Link
@@ -372,6 +387,10 @@ function AppShellInner({
 
           <Link href="/app/profile" onClick={() => setIsMobileOpen(false)} className="flex min-h-11 items-center gap-2.5 rounded-lg px-3 text-sm font-semibold text-slate-200 hover:bg-slate-900 transition-colors">
             <UserRound className="h-4 w-4 text-blue-300" /><span>መገለጫ</span>
+          </Link>
+
+          <Link href="/manager" onClick={() => setIsMobileOpen(false)} className="flex min-h-11 items-center gap-2.5 rounded-lg px-3 text-sm font-semibold text-amber-400 hover:bg-slate-900 transition-colors">
+            <ShieldCheck className="h-4 w-4 text-amber-400" /><span>የስራ አስኪያጅ ፖርታል (Manager)</span>
           </Link>
 
           <div className="flex items-center justify-between gap-2">
