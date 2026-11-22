@@ -28,10 +28,10 @@ begin
   end if;
 
   insert into public.profiles(id, display_name, role, is_active)
-  values (p_user_id, nullif(trim(p_display_name), ''), 'admin', true)
+  values (p_user_id, nullif(trim(p_display_name), ''), 'manager'::public.app_role, true)
   on conflict (id) do update
     set display_name = excluded.display_name,
-        role = 'admin',
+        role = excluded.role,
         is_active = true;
 end;
 $$;

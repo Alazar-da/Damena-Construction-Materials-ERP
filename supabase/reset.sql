@@ -6,7 +6,7 @@ create extension if not exists pgcrypto;
 grant usage on schema public to anon, authenticated, service_role;
 
 create type public.product_category as enum ('cement','brick','terazone','service','other');
-create type public.app_role as enum ('super_admin','admin');
+create type public.app_role as enum ('super_admin','manager','admin');
 create type public.sale_status as enum ('open','paid','void');
 create table public.profiles(id uuid primary key references auth.users(id) on delete restrict,display_name text,role public.app_role not null default 'admin',is_active boolean not null default true,created_at timestamptz not null default now());
 create unique index one_super_admin on public.profiles(role) where role='super_admin' and is_active;
