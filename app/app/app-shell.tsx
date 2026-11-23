@@ -9,7 +9,6 @@ import {
   Factory,
   ShoppingCart,
   WalletCards,
-  TrendingUp,
   ChevronLeft,
   ChevronDown,
   Menu,
@@ -18,6 +17,7 @@ import {
   Plus,
   ArrowUpRight,
   ShieldCheck,
+  Crown,
   LogOut,
   UserRound,
   Wrench,
@@ -264,7 +264,7 @@ function AppShellInner({
           {isSuperAdmin && (
             <Link
               href="/owner"
-              title="የባለቤት ፖርታል"
+              title="ወደ ዋና ባለቤት ገጽ"
               className={`transition-colors cursor-pointer ${
                 'md:max-xl:w-14 md:max-xl:h-12 md:max-xl:flex md:max-xl:flex-col md:max-xl:items-center md:max-xl:justify-center md:max-xl:rounded-xl md:max-xl:text-emerald-400 md:max-xl:hover:bg-slate-900/80'
               } ${
@@ -273,10 +273,10 @@ function AppShellInner({
                 isCollapsed ? 'xl:justify-center' : 'xl:gap-2.5'
               }`}
             >
-              <TrendingUp className="w-4 h-4 text-emerald-400 shrink-0" />
+              <Crown className="w-4 h-4 text-emerald-400 shrink-0" />
               <span className="text-[9px] mt-0.5 font-semibold md:max-xl:inline hidden">ባለቤት</span>
               {!isCollapsed && (
-                <span className="font-semibold text-slate-200 truncate hidden xl:inline">የባለቤት ፖርታል</span>
+                <span className="font-semibold text-slate-200 truncate hidden xl:inline">ወደ ዋና ባለቤት ገጽ</span>
               )}
             </Link>
           )}
@@ -382,10 +382,10 @@ function AppShellInner({
               <Link
                 href="/owner"
                 onClick={() => setIsMobileOpen(false)}
-                className="flex-1 flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold text-slate-200 hover:bg-slate-900 transition-colors"
+                className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-emerald-300 bg-slate-900/80 hover:bg-slate-900 border border-slate-800 transition-colors"
               >
-                <TrendingUp className="w-4 h-4 text-emerald-400" />
-                <span>የባለቤት ፖርታል</span>
+                <Crown className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>ወደ ዋና ባለቤት ገጽ</span>
               </Link>
             )}
 
@@ -465,6 +465,18 @@ function AppShellInner({
           <div className="hidden md:max-xl:flex items-center gap-2.5">
             {headerRight}
 
+            {/* Tablet Super Admin Return to Owner Portal */}
+            {isSuperAdmin && (
+              <Link
+                href="/owner"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-950/80 border border-emerald-800/80 text-emerald-300 hover:bg-emerald-900 text-xs font-semibold transition-colors"
+                title="ወደ ዋና ባለቤት ገጽ"
+              >
+                <Crown className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="hidden lg:inline text-[11px]">ዋና ባለቤት</span>
+              </Link>
+            )}
+
             {/* Notification Bell */}
             <Link
               href={isSuperAdmin ? '/owner/reports' : '/app'}
@@ -493,6 +505,16 @@ function AppShellInner({
 
           {/* PC-ONLY: Quick Header Actions (ሲሚንቶ, ምርት, ሽያጭ) */}
           <div className="flex items-center gap-1.5 sm:gap-2 md:max-xl:hidden">
+            {isSuperAdmin && (
+              <Link
+                href="/owner"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-300 bg-emerald-50 text-xs font-bold text-emerald-900 hover:bg-emerald-100 transition-colors mr-1"
+                title="ወደ ዋና ባለቤት ገጽ"
+              >
+                <Crown className="w-3.5 h-3.5 text-emerald-700" />
+                <span>ወደ ዋና ባለቤት ገጽ</span>
+              </Link>
+            )}
             <Link
               href="/app/stock"
               onClick={() => {

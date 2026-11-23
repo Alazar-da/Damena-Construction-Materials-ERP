@@ -7,6 +7,7 @@ import {
   TrendingUp,
   Tag,
   ChartNoAxesCombined,
+  ArrowLeft,
   ChevronLeft,
   ChevronDown,
   HardHat,
@@ -78,9 +79,8 @@ function OwnerShellInner({ children, userEmail, displayName }: OwnerShellProps) 
           - PC Desktop (xl+): Original collapsible sidebar (w-60 / w-18) with toggle
       ========================================================================= */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 hidden md:flex flex-col bg-slate-950 text-slate-100 border-r border-slate-800/80 transition-all duration-300 ease-in-out md:max-xl:w-20 ${
-          isCollapsed ? 'xl:w-18' : 'xl:w-60'
-        }`}
+        className={`fixed inset-y-0 left-0 z-40 hidden md:flex flex-col bg-slate-950 text-slate-100 border-r border-slate-800/80 transition-all duration-300 ease-in-out md:max-xl:w-20 ${isCollapsed ? 'xl:w-18' : 'xl:w-60'
+          }`}
       >
         {/* PC-ONLY: Border rail toggle button (hidden on tablet) */}
         <button
@@ -90,9 +90,8 @@ function OwnerShellInner({ children, userEmail, displayName }: OwnerShellProps) 
           className="hidden xl:flex absolute -right-5 top-4 z-50 items-center justify-center w-11 h-11 rounded-full bg-slate-900 border border-slate-700 text-slate-200 hover:text-white hover:bg-slate-800 shadow-sm transition-all duration-200 cursor-pointer"
         >
           <ChevronLeft
-            className={`w-3.5 h-3.5 transition-transform duration-300 ease-in-out ${
-              isCollapsed ? 'rotate-180' : ''
-            }`}
+            className={`w-3.5 h-3.5 transition-transform duration-300 ease-in-out ${isCollapsed ? 'rotate-180' : ''
+              }`}
           />
         </button>
 
@@ -100,9 +99,8 @@ function OwnerShellInner({ children, userEmail, displayName }: OwnerShellProps) 
         <div className="flex items-center h-16 border-b border-slate-800/60 md:max-xl:justify-center xl:px-4">
           <Link
             href="/owner"
-            className={`flex items-center gap-2.5 overflow-hidden transition-all md:max-xl:justify-center ${
-              isCollapsed ? 'xl:justify-center xl:w-full' : ''
-            }`}
+            className={`flex items-center gap-2.5 overflow-hidden transition-all md:max-xl:justify-center ${isCollapsed ? 'xl:justify-center xl:w-full' : ''
+              }`}
           >
             <div className="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-200 shrink-0">
               <HardHat className="w-4 h-4 text-slate-300" />
@@ -133,28 +131,22 @@ function OwnerShellInner({ children, userEmail, displayName }: OwnerShellProps) 
                 key={item.href}
                 href={item.href}
                 title={item.label}
-                className={`transition-all cursor-pointer ${
-                  'md:max-xl:flex md:max-xl:flex-col md:max-xl:items-center md:max-xl:justify-center md:max-xl:py-2.5 md:max-xl:px-1 md:max-xl:rounded-xl'
-                } ${
-                  'xl:flex xl:items-center xl:rounded-lg xl:text-xs xl:relative xl:group'
-                } ${
-                  isCollapsed ? 'xl:h-11 xl:w-11 xl:mx-auto xl:justify-center' : 'xl:min-h-11 xl:px-3 xl:py-2 xl:gap-3'
-                } ${
-                  isActive
+                className={`transition-all cursor-pointer ${'md:max-xl:flex md:max-xl:flex-col md:max-xl:items-center md:max-xl:justify-center md:max-xl:py-2.5 md:max-xl:px-1 md:max-xl:rounded-xl'
+                  } ${'xl:flex xl:items-center xl:rounded-lg xl:text-xs xl:relative xl:group'
+                  } ${isCollapsed ? 'xl:h-11 xl:w-11 xl:mx-auto xl:justify-center' : 'xl:min-h-11 xl:px-3 xl:py-2 xl:gap-3'
+                  } ${isActive
                     ? 'bg-slate-900 text-white font-semibold border border-slate-800 shadow-xs'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/50'
-                }`}
+                  }`}
               >
                 {isActive && !isCollapsed && (
                   <span className="w-1.5 h-1.5 rounded-full bg-white shrink-0 hidden xl:inline" />
                 )}
 
                 <Icon
-                  className={`shrink-0 transition-colors ${
-                    'md:max-xl:w-5 md:max-xl:h-5 xl:w-4 xl:h-4'
-                  } ${
-                    isActive ? 'text-emerald-400 xl:text-white' : 'text-slate-400 group-hover:text-slate-200'
-                  }`}
+                  className={`shrink-0 transition-colors ${'md:max-xl:w-5 md:max-xl:h-5 xl:w-4 xl:h-4'
+                    } ${isActive ? 'text-emerald-400 xl:text-white' : 'text-slate-400 group-hover:text-slate-200'
+                    }`}
                 />
 
                 <span className="text-[10px] mt-1 font-semibold text-center leading-tight truncate max-w-full hidden md:max-xl:inline">
@@ -179,13 +171,31 @@ function OwnerShellInner({ children, userEmail, displayName }: OwnerShellProps) 
         <div className="border-t border-slate-800/60 md:max-xl:p-2 md:max-xl:space-y-2 md:max-xl:flex md:max-xl:flex-col md:max-xl:items-center xl:p-3 xl:space-y-2">
           <Link
             href="/owner/profile"
-            className={`flex items-center rounded-lg text-slate-300 hover:bg-slate-900/60 hover:text-white transition-colors hidden xl:flex ${
-              isCollapsed ? 'mx-auto h-11 w-11 justify-center' : 'min-h-11 gap-2.5 px-3'
-            }`}
+            className={`flex items-center rounded-lg text-slate-300 hover:bg-slate-900/60 hover:text-white transition-colors hidden xl:flex ${isCollapsed ? 'mx-auto h-11 w-11 justify-center' : 'min-h-11 gap-2.5 px-3'
+              }`}
             title="የእኔ መገለጫ"
           >
             <UserRound className="h-4 w-4 text-blue-300" />
             {!isCollapsed && <span className="truncate text-sm font-semibold">መገለጫ</span>}
+          </Link>
+
+          {/* Super Admin Switch to Admin Portal */}
+          <Link
+            href="/app"
+            title="ወደ አስተዳዳሪ ገጽ"
+            className={`transition-colors cursor-pointer ${
+              'md:max-xl:w-14 md:max-xl:h-12 md:max-xl:flex md:max-xl:flex-col md:max-xl:items-center md:max-xl:justify-center md:max-xl:rounded-xl md:max-xl:text-emerald-400 md:max-xl:hover:bg-slate-900/80'
+            } ${
+              'xl:flex xl:items-center xl:rounded-lg xl:text-xs xl:text-slate-300 xl:hover:text-white xl:hover:bg-slate-900/60 xl:p-2'
+            } ${
+              isCollapsed ? 'xl:justify-center' : 'xl:gap-2.5'
+            }`}
+          >
+            <ArrowLeft className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span className="text-[9px] mt-0.5 font-semibold md:max-xl:inline hidden">አስተዳዳሪ</span>
+            {!isCollapsed && (
+              <span className="font-semibold text-slate-200 truncate hidden xl:inline">ወደ አስተዳዳሪ ገጽ</span>
+            )}
           </Link>
 
           <form action={logout} className="w-full flex justify-center">
@@ -280,6 +290,16 @@ function OwnerShellInner({ children, userEmail, displayName }: OwnerShellProps) 
             <span>መገለጫ</span>
           </Link>
 
+          {/* Super Admin Switch to Admin Portal in Mobile Drawer */}
+          <Link
+            href="/app"
+            onClick={() => setIsMobileOpen(false)}
+            className="flex min-h-11 items-center gap-2.5 rounded-xl px-3 text-sm font-semibold text-emerald-300 bg-slate-900/60 hover:bg-slate-900 border border-slate-800 transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4 text-emerald-400" />
+            <span>ወደ አስተዳዳሪ ገጽ</span>
+          </Link>
+
           <form action={logout}>
             <button
               type="submit"
@@ -298,19 +318,16 @@ function OwnerShellInner({ children, userEmail, displayName }: OwnerShellProps) 
           - PC Desktop (xl+): Collapsible padding-left xl:pl-60 or xl:pl-18
       ========================================================================= */}
       <div
-        className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out md:max-xl:pl-20 ${
-          isCollapsed ? 'xl:pl-18' : 'xl:pl-60'
-        }`}
+        className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out md:max-xl:pl-20 ${isCollapsed ? 'xl:pl-18' : 'xl:pl-60'
+          }`}
       >
         {/* Sticky Top Header:
             - Tablet: Dark Slate theme, profile in header, bell
             - PC Desktop: Clean White Header with title and switch button */}
         <header
-          className={`sticky top-0 z-30 h-14 sm:h-16 flex items-center justify-between px-3.5 sm:px-6 transition-colors ${
-            'md:max-xl:bg-[#1e293b] md:max-xl:text-white md:max-xl:border-b md:max-xl:border-slate-800'
-          } ${
-            'xl:bg-white xl:text-slate-900 xl:border-b xl:border-slate-200 bg-white border-b border-slate-200'
-          }`}
+          className={`sticky top-0 z-30 h-14 sm:h-16 flex items-center justify-between px-3.5 sm:px-6 transition-colors ${'md:max-xl:bg-[#1e293b] md:max-xl:text-white md:max-xl:border-b md:max-xl:border-slate-800'
+            } ${'xl:bg-white xl:text-slate-900 xl:border-b xl:border-slate-200 bg-white border-b border-slate-200'
+            }`}
         >
           {/* Left Area */}
           <div className="flex items-center gap-2.5 sm:gap-3">
@@ -355,6 +372,15 @@ function OwnerShellInner({ children, userEmail, displayName }: OwnerShellProps) 
             {headerRight}
 
             <Link
+              href="/app"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-800 text-xs font-semibold text-emerald-300 hover:text-white hover:bg-slate-700 border border-slate-700 transition-colors"
+              title="ወደ አስተዳዳሪ ገጽ"
+            >
+              <ArrowLeft className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="hidden lg:inline text-[11px]">አስተዳዳሪ</span>
+            </Link>
+
+            <Link
               href="/owner/reports"
               className="relative p-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
               title="Notifications"
@@ -372,6 +398,17 @@ function OwnerShellInner({ children, userEmail, displayName }: OwnerShellProps) 
                 {(displayName || userEmail || 'O').charAt(0).toUpperCase()}
               </div>
               <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-200" />
+            </Link>
+          </div>
+
+          {/* PC Header Switch to Admin Page */}
+          <div className="hidden xl:flex items-center gap-2">
+            <Link
+              href="/app"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors shadow-2xs"
+            >
+              <ArrowLeft className="w-3.5 h-3.5 text-slate-500" />
+              <span>ወደ አስተዳዳሪ ገጽ</span>
             </Link>
           </div>
         </header>

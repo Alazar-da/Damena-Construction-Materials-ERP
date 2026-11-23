@@ -22,7 +22,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     user.user_metadata?.role === 'super_admin' ||
     profile?.role === 'super_admin';
 
-  const isManager = !isSuperAdmin && userRole === 'manager';
+  const isManager = !isSuperAdmin && (userRole === 'manager' || profile?.role === 'manager');
 
   if (isManager) {
     redirect('/manager');

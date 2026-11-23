@@ -23,7 +23,7 @@ export default async function OwnerLayout({ children }: { children: React.ReactN
     user.user_metadata?.role === 'super_admin';
 
   if (!isSuperAdmin) {
-    if (userRole === 'manager') redirect('/manager');
+    if (userRole === 'manager' || profile?.role === 'manager') redirect('/manager');
     redirect('/app');
   }
 

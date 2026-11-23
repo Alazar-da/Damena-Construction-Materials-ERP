@@ -75,7 +75,7 @@ export async function middleware(request: NextRequest) {
   if (user) {
     const metaRole = user.app_metadata?.role || user.user_metadata?.role;
     let isSuperAdmin = metaRole === 'super_admin';
-    const isManager = metaRole === 'manager';
+    let isManager = metaRole === 'manager';
 
     if (!isSuperAdmin && !isManager) {
       const { data: profile } = await client
@@ -86,6 +86,8 @@ export async function middleware(request: NextRequest) {
 
       if (profile?.role === 'super_admin') {
         isSuperAdmin = true;
+      } else if (profile?.role === 'manager') {
+        isManager = true;
       }
     }
 
