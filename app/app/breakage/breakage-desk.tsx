@@ -53,13 +53,6 @@ const imageFor = (name: string) =>
 const displayProductName = (name: string) =>
   name.replace(/(\d+\s*\/\s*\d+)\s*Block/i, '$1 ብሎክ').replace(/Terrace/i, 'ቴራሶ');
 
-const PRESET_REASONS = [
-  'በትራንስፖርት ወቅት የተሰበረ',
-  'በመጫን / በማውረድ ወቅት',
-  'በመጋዘን አያያዝ ወቅት',
-  'ከደንበኛ የተመለሰ ስብርባሪ',
-];
-
 const STEP_PRESETS = [1, 5, 10, 25, 50, 100];
 
 export default function BreakageDesk({
@@ -71,8 +64,6 @@ export default function BreakageDesk({
 }) {
   const [selectedId, setSelectedId] = useState(products[0]?.id || '');
   const [quantity, setQuantity] = useState('10');
-  const [selectedReason, setSelectedReason] = useState(PRESET_REASONS[0]);
-  const [customNote, setCustomNote] = useState('');
   const [historyPage, setHistoryPage] = useState(1);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
@@ -87,7 +78,6 @@ export default function BreakageDesk({
           message: 'ስብርባሪው በተሳካ ሁኔታ ተመዝግቧል።',
         });
         setQuantity('10');
-        setCustomNote('');
       } else if (res.error) {
         setNotification({ type: 'error', message: res.error });
       }
@@ -206,7 +196,7 @@ export default function BreakageDesk({
         <input
           type="hidden"
           name="reason"
-          value={customNote.trim() ? `${selectedReason} - ${customNote.trim()}` : selectedReason}
+          value="በትራንስፖርት/በሽያጭ ወቅት የተሰበረ"
         />
 
         {/* 1. Visual Product Photo Selector (4 across on tablet & desktop, 2x2 on mobile) */}
@@ -280,7 +270,7 @@ export default function BreakageDesk({
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <label className="text-xs font-bold text-slate-800">
-              2. የተሰበረው ብዛት
+              2. የተሰበረው ብዛት (ከክምችት የሚቀነስ)
             </label>
             <span className="text-[11px] font-mono text-slate-500">
               ከስብርባሪ በኋላ የሚቀረው፦{' '}
@@ -356,44 +346,7 @@ export default function BreakageDesk({
           )}
         </div>
 
-        {/* 3. Reason for Damage */}
-        <div className="space-y-2">
-          <label className="text-xs font-bold text-slate-800 block">
-            3. የስብራት ወይም የብልሽት ምክንያት
-          </label>
-
-          {/* Preset reason tags */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {PRESET_REASONS.map((r) => {
-              const isSelected = selectedReason === r;
-              return (
-                <button
-                  key={r}
-                  type="button"
-                  onClick={() => setSelectedReason(r)}
-                  className={`p-2.5 rounded-xl border text-xs font-bold text-center transition-all cursor-pointer ${
-                    isSelected
-                      ? 'border-amber-500 bg-amber-50 text-amber-900 ring-1 ring-amber-400'
-                      : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-                  }`}
-                >
-                  {r}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Optional detail note */}
-          <input
-            type="text"
-            value={customNote}
-            onChange={(e) => setCustomNote(e.target.value)}
-            placeholder="ተጨማሪ ማስታወሻ ካለ (የመኪና ታርጋ፣ ሹፌር፣ ቦታ...)"
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white"
-          />
-        </div>
-
-        {/* 4. Submit Button */}
+        {/* Submit Button */}
         <div className="pt-2">
           <button
             type="submit"
