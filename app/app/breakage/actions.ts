@@ -27,7 +27,7 @@ export async function recordBreakage(
 
   const client = await db();
 
-  // Try RPC first
+  // 1. Try RPC first
   try {
     const { error: rpcError } = await client.rpc('record_broken_materials', {
       p_product_id: productId,
@@ -44,24 +44,40 @@ export async function recordBreakage(
       revalidatePath('/manager/reports');
       return { success: true };
     }
-  } catch {
-    // Fall back to direct table update via admin client
+
+    // If RPC returned a specific business exception, return it directly
+    if (rpcError && rpcError.code !== 'PGRST202') {
+      return { error: rpcError.message };
+    }
+  } catch (rpcEx: unknown) {
+    console.error('RPC call error:', rpcEx);
   }
 
-  // Resilient fallback with service role admin client
+  // 2. Resilient fallback with client & service role
   try {
     const admin = getAdminClient();
-    const dbClient = admin || client;
 
-    // 1. Fetch product
-    const { data: product, error: fetchErr } = await dbClient
+    // Fetch product using user's authenticated client first, then admin
+    let product: { id: string; name: string; stock_on_hand: number } | null = null;
+    const { data: clientProduct } = await client
       .from('products')
       .select('id, name, stock_on_hand')
       .eq('id', productId)
-      .single();
+      .maybeSingle();
 
-    if (fetchErr || !product) {
-      return { error: 'የተመረጠው ምርት አልተገኘም።' };
+    if (clientProduct) {
+      product = clientProduct;
+    } else if (admin) {
+      const { data: adminProduct } = await admin
+        .from('products')
+        .select('id, name, stock_on_hand')
+        .eq('id', productId)
+        .maybeSingle();
+      if (adminProduct) product = adminProduct;
+    }
+
+    if (!product) {
+      return { error: 'የተመረጠው ምርት አልተገኘም። እባክዎ ገጹን ሪፍሬሽ አድርገው እንደገና ይሞክሩ።' };
     }
 
     const currentStock = Number(product.stock_on_hand || 0);
@@ -73,23 +89,53 @@ export async function recordBreakage(
 
     const newStock = Math.max(0, currentStock - quantity);
 
-    // 2. Minus from store stock
-    const { error: updateErr } = await dbClient
-      .from('products')
-      .update({ stock_on_hand: newStock })
-      .eq('id', productId);
+    // Update stock via admin or client
+    let updateSuccess = false;
+    let lastError = '';
 
-    if (updateErr) {
-      return { error: `ክምችት መቀነስ አልተቻለም፦ ${updateErr.message}` };
+    if (admin) {
+      const { error: adminUpdateErr } = await admin
+        .from('products')
+        .update({ stock_on_hand: newStock })
+        .eq('id', productId);
+      if (!adminUpdateErr) {
+        updateSuccess = true;
+      } else {
+        lastError = adminUpdateErr.message;
+      }
     }
 
-    // 3. Log into inventory_movements
-    await dbClient.from('inventory_movements').insert({
+    if (!updateSuccess) {
+      const { error: clientUpdateErr } = await client
+        .from('products')
+        .update({ stock_on_hand: newStock })
+        .eq('id', productId);
+      if (!clientUpdateErr) {
+        updateSuccess = true;
+      } else {
+        lastError = clientUpdateErr.message;
+      }
+    }
+
+    if (!updateSuccess) {
+      return {
+        error: `ክምችት መቀነስ አልተቻለም። እባክዎ በ Supabase SQL Editor ውስጥ breakage_setup.sql ፋይልን ያሂዱ (${lastError})`,
+      };
+    }
+
+    // Insert movement
+    const movementPayload = {
       product_id: productId,
       quantity_delta: -quantity,
       movement_type: 'breakage',
       reason,
-    });
+    };
+
+    if (admin) {
+      await admin.from('inventory_movements').insert(movementPayload);
+    } else {
+      await client.from('inventory_movements').insert(movementPayload);
+    }
 
     revalidatePath('/app/breakage');
     revalidatePath('/app/stock');
