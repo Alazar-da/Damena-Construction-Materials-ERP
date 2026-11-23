@@ -1,24 +1,32 @@
 -- =====================================================================
 -- DAMENA ERP: Manager Role & Permissions Setup
--- Run this script in the Supabase SQL Editor (Dashboard > SQL Editor)
+-- Note: In PostgreSQL, new enum values must be committed before use.
+-- Please run STEP 1 first, then run STEP 2.
 -- =====================================================================
 
--- 1. Add 'manager' value to the public.app_role enum
+-- ---------------------------------------------------------------------
+-- STEP 1: Run this line alone first!
+-- ---------------------------------------------------------------------
 ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'manager';
 
--- 2. Grant table permissions to service_role and authenticated
+
+-- ---------------------------------------------------------------------
+-- STEP 2: After Step 1 is done, run everything below:
+-- ---------------------------------------------------------------------
+
+-- 1. Grant table permissions to service_role and authenticated
 GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
 GRANT ALL ON TABLE public.profiles TO service_role;
 GRANT SELECT ON TABLE public.profiles TO authenticated;
 
--- 3. Update existing test manager profile (e.g. test@gmail.com) to have role = 'manager'
+-- 2. Update existing manager profile (test@gmail.com) to have role = 'manager'
 UPDATE public.profiles
 SET role = 'manager', is_active = true
 WHERE id IN (
   SELECT id FROM auth.users WHERE email = 'test@gmail.com'
 );
 
--- 4. Update owner_assign_admin_profile to support assigning 'manager' or 'admin'
+-- 3. Update owner_assign_admin_profile to support assigning 'manager' or 'admin'
 CREATE OR REPLACE FUNCTION public.owner_assign_admin_profile(
   p_user_id UUID,
   p_display_name TEXT,
@@ -77,7 +85,7 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.owner_assign_admin_profile(UUID, TEXT) TO authenticated;
 
--- 5. Update update_product_price to permit both super_admin and manager
+-- 4. Update update_product_price to permit both super_admin and manager
 CREATE OR REPLACE FUNCTION public.update_product_price(p_product_id UUID, p_price NUMERIC)
 RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
@@ -116,7 +124,7 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.update_product_price(UUID, NUMERIC) TO authenticated;
 
--- 6. Update update_product_threshold to permit both super_admin and manager
+-- 5. Update update_product_threshold to permit both super_admin and manager
 CREATE OR REPLACE FUNCTION public.update_product_threshold(p_product_id UUID, p_threshold NUMERIC)
 RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
@@ -155,7 +163,7 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.update_product_threshold(UUID, NUMERIC) TO authenticated;
 
--- 7. Update log_owner_edit to permit both super_admin and manager
+-- 6. Update log_owner_edit to permit both super_admin and manager
 CREATE OR REPLACE FUNCTION public.log_owner_edit(
   p_entity_type TEXT,
   p_entity_id UUID,
