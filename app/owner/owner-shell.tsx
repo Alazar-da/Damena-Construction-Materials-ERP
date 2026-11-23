@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -10,7 +11,6 @@ import {
   ArrowLeft,
   ChevronLeft,
   ChevronDown,
-  HardHat,
   Menu,
   X,
   ShieldCheck,
@@ -102,8 +102,13 @@ function OwnerShellInner({ children, userEmail, displayName }: OwnerShellProps) 
             className={`flex items-center gap-2.5 overflow-hidden transition-all md:max-xl:justify-center ${isCollapsed ? 'xl:justify-center xl:w-full' : ''
               }`}
           >
-            <div className="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-200 shrink-0">
-              <HardHat className="w-4 h-4 text-slate-300" />
+            <div className="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 overflow-hidden relative shrink-0 flex items-center justify-center">
+              <Image
+                src="/logo.png"
+                alt="DAMENA"
+                fill
+                className="object-contain p-0.5"
+              />
             </div>
 
             <div className={`min-w-0 hidden md:max-xl:hidden ${isCollapsed ? 'xl:hidden' : 'xl:block'}`}>
@@ -227,8 +232,13 @@ function OwnerShellInner({ children, userEmail, displayName }: OwnerShellProps) 
       >
         <div className="flex items-center justify-between h-16 px-4 border-b border-slate-800/60">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-200">
-              <HardHat className="w-4 h-4 text-slate-300" />
+            <div className="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 overflow-hidden relative shrink-0 flex items-center justify-center">
+              <Image
+                src="/logo.png"
+                alt="DAMENA"
+                fill
+                className="object-contain p-0.5"
+              />
             </div>
             <span className="text-sm font-bold tracking-wider text-white font-mono">
               DAMENA

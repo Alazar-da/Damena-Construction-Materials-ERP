@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -13,7 +14,6 @@ import {
   ChevronDown,
   Menu,
   X,
-  HardHat,
   Plus,
   ArrowUpRight,
   ShieldCheck,
@@ -151,8 +151,13 @@ function AppShellInner({
               isCollapsed ? 'xl:justify-center xl:w-full' : ''
             }`}
           >
-            <div className="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-200 shrink-0">
-              <HardHat className="w-4 h-4 text-sky-400" />
+            <div className="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 overflow-hidden relative shrink-0 flex items-center justify-center">
+              <Image
+                src="/logo.png"
+                alt="DAMENA"
+                fill
+                className="object-contain p-0.5"
+              />
             </div>
 
             {/* Title visible on PC when not collapsed */}
@@ -313,8 +318,13 @@ function AppShellInner({
       >
         <div className="flex items-center justify-between h-16 px-4 border-b border-slate-800/60">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-200">
-              <HardHat className="w-4 h-4 text-sky-400" />
+            <div className="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 overflow-hidden relative shrink-0 flex items-center justify-center">
+              <Image
+                src="/logo.png"
+                alt="DAMENA"
+                fill
+                className="object-contain p-0.5"
+              />
             </div>
             <div>
               <span className="text-sm font-bold tracking-wider text-white font-mono block leading-none">
@@ -439,8 +449,13 @@ function AppShellInner({
 
             {/* Tablet Brand Display */}
             <div className="hidden md:max-xl:flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-emerald-400 font-black text-sm shadow-inner">
-                D
+              <div className="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 overflow-hidden relative shrink-0 flex items-center justify-center">
+                <Image
+                  src="/logo.png"
+                  alt="DAMENA"
+                  fill
+                  className="object-contain p-0.5"
+                />
               </div>
               <span className="font-bold text-white text-base tracking-tight">
                 Damena ERP

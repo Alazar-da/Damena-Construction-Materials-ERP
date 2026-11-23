@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import { login } from '@/app/login/actions';
 import {
-  HardHat,
   Lock,
   Mail,
   ArrowRight,
@@ -152,14 +152,23 @@ export default function Home() {
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-sky-500/10 blur-[130px] rounded-full pointer-events-none" />
 
       <div className="w-full max-w-sm relative z-10 space-y-6">
-        {/* Brand Header */}
-        <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-13 h-13 rounded-2xl bg-gradient-to-tr from-sky-600 via-blue-600 to-amber-500 shadow-xl shadow-sky-950/60 ring-4 ring-slate-900">
-            <HardHat className="w-6 h-6 text-white drop-shadow-sm" />
+        {/* Brand Header with Official Logo */}
+        <div className="text-center space-y-3 flex flex-col items-center">
+          <div className="relative w-48 h-24 sm:w-56 sm:h-28 rounded-2xl overflow-hidden shadow-2xl shadow-sky-950/70 border border-slate-800 bg-slate-950/90 flex items-center justify-center p-1.5">
+            <Image
+              src="/logo.png"
+              alt="DAMENA Construction Materials ደመና"
+              fill
+              priority
+              className="object-contain"
+            />
           </div>
-          <h1 className="text-2xl font-black tracking-tight text-white font-sans">
-            DAMENA ERP
-          </h1>
+          <div>
+            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white font-sans">
+              DAMENA ERP
+            </h1>
+            <p className="text-xs text-slate-400 mt-0.5">የግንባታ እቃዎች እና የስራ ቦታ አስተዳደር</p>
+          </div>
         </div>
 
         {/* Card */}
