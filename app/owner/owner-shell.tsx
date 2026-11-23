@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { logout } from '@/app/login/actions';
 import { HeaderSlotProvider, useHeaderSlot } from '@/components/header-slot-context';
+import { t } from '@/lib/i18n';
 
 interface OwnerNavItem {
   href: string;
@@ -32,12 +33,12 @@ interface OwnerNavItem {
 }
 
 const ownerNavItems: OwnerNavItem[] = [
-  { href: '/owner', label: 'አጠቃላይ እይታ', mobileLabel: 'አጠቃላይ', icon: TrendingUp },
-  { href: '/owner/prices', label: 'ዋጋዎች', mobileLabel: 'ዋጋ', icon: Tag },
-  { href: '/owner/reports', label: 'ሪፖርቶች', mobileLabel: 'ሪፖርት', icon: ChartNoAxesCombined },
-  { href: '/owner/records', label: 'መዝገቦችን አስተዳድር', mobileLabel: 'መዝገቦች', icon: ClipboardPenLine },
-  { href: '/owner/users', label: 'ስራ አስኪያጅና ተጠቃሚዎች', mobileLabel: 'አስኪያጅ', icon: Users },
-  { href: '/owner/machinery', label: 'ማሽነሪ', mobileLabel: 'ማሽነሪ', icon: Wrench },
+  { href: '/owner', label: t.nav.overview, mobileLabel: t.nav.overviewMobile, icon: TrendingUp },
+  { href: '/owner/prices', label: t.nav.prices, mobileLabel: t.nav.pricesMobile, icon: Tag },
+  { href: '/owner/reports', label: t.nav.reports, mobileLabel: t.nav.reportsMobile, icon: ChartNoAxesCombined },
+  { href: '/owner/records', label: t.nav.records, mobileLabel: t.nav.recordsMobile, icon: ClipboardPenLine },
+  { href: '/owner/users', label: t.nav.users, mobileLabel: t.nav.usersMobile, icon: Users },
+  { href: '/owner/machinery', label: t.nav.machinery, mobileLabel: t.nav.machineryMobile, icon: Wrench },
 ];
 
 interface OwnerShellProps {

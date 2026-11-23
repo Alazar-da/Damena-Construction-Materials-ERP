@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { logout } from '@/app/login/actions';
 import { HeaderSlotProvider, useHeaderSlot } from '@/components/header-slot-context';
+import { t } from '@/lib/i18n';
 
 interface NavItem {
   href: string;
@@ -28,10 +29,10 @@ interface NavItem {
 }
 
 const managerNavItems: NavItem[] = [
-  { href: '/manager', label: 'አጠቃላይ እይታ', mobileLabel: 'አጠቃላይ', icon: LayoutDashboard },
-  { href: '/manager/prices', label: 'ዋጋዎች', mobileLabel: 'ዋጋ', icon: Tag },
-  { href: '/manager/reports', label: 'ሪፖርቶች', mobileLabel: 'ሪፖርት', icon: ChartNoAxesCombined },
-  { href: '/manager/machinery', label: 'ማሽነሪ', mobileLabel: 'ማሽነሪ', icon: Wrench },
+  { href: '/manager', label: t.nav.overview, mobileLabel: t.nav.overviewMobile, icon: LayoutDashboard },
+  { href: '/manager/prices', label: t.nav.prices, mobileLabel: t.nav.pricesMobile, icon: Tag },
+  { href: '/manager/reports', label: t.nav.reports, mobileLabel: t.nav.reportsMobile, icon: ChartNoAxesCombined },
+  { href: '/manager/machinery', label: t.nav.machinery, mobileLabel: t.nav.machineryMobile, icon: Wrench },
 ];
 
 interface ManagerShellProps {

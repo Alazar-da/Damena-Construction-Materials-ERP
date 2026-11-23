@@ -13,6 +13,7 @@ import {
   Users,
   ShieldCheck,
 } from 'lucide-react';
+import { t } from '@/lib/i18n';
 
 export const dynamic = 'force-dynamic';
 
@@ -288,10 +289,10 @@ export default async function AdminOverview({
           className="grid grid-cols-4 w-full md:w-auto bg-slate-100 p-1 sm:p-1.5 rounded-xl sm:rounded-2xl border border-slate-200/80 gap-1 shrink-0"
         >
           {[
-            { id: 'today', mobileLabel: 'ዛሬ', fullLabel: 'ዛሬ' },
-            { id: 'yesterday', mobileLabel: 'ትናንት', fullLabel: 'ትናንት' },
-            { id: 'weekly', mobileLabel: 'ሳምንት', fullLabel: 'ይህ ሳምንት' },
-            { id: 'monthly', mobileLabel: 'ወር', fullLabel: 'ይህ ወር' },
+            { id: 'today', mobileLabel: t.overview.today, fullLabel: t.overview.today },
+            { id: 'yesterday', mobileLabel: t.overview.yesterday, fullLabel: t.overview.yesterday },
+            { id: 'weekly', mobileLabel: 'ሳምንት', fullLabel: t.overview.thisWeek },
+            { id: 'monthly', mobileLabel: 'ወር', fullLabel: t.overview.thisMonth },
           ].map((tab) => {
             const isActive = period === tab.id;
             return (

@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { logout } from '@/app/login/actions';
 import { HeaderSlotProvider, useHeaderSlot } from '@/components/header-slot-context';
+import { t } from '@/lib/i18n';
 
 interface NavItem {
   href: string;
@@ -34,12 +35,12 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { href: '/app', label: 'ዛሬ', mobileLabel: 'ዛሬ', icon: LayoutDashboard },
-  { href: '/app/stock', label: 'የሲሚንቶ መጋዘን', mobileLabel: 'ሲሚንቶ', icon: Boxes },
-  { href: '/app/production', label: 'ምርት', mobileLabel: 'ምርት', icon: Factory },
-  { href: '/app/sales', label: 'ሽያጭ', mobileLabel: 'ሽያጭ', icon: ShoppingCart },
-  { href: '/app/payroll', label: 'የደመወዝ ክፍያ', mobileLabel: 'ደመወዝ', icon: WalletCards },
-  { href: '/app/machinery', label: 'ማሽነሪ', mobileLabel: 'ማሽነሪ', icon: Wrench },
+  { href: '/app', label: t.overview.today, mobileLabel: t.overview.today, icon: LayoutDashboard },
+  { href: '/app/stock', label: t.stock.title, mobileLabel: t.nav.stockMobile, icon: Boxes },
+  { href: '/app/production', label: t.production.title, mobileLabel: t.nav.productionMobile, icon: Factory },
+  { href: '/app/sales', label: t.sales.title, mobileLabel: t.nav.salesMobile, icon: ShoppingCart },
+  { href: '/app/payroll', label: t.payroll.title, mobileLabel: t.nav.payrollMobile, icon: WalletCards },
+  { href: '/app/machinery', label: t.machinery.title, mobileLabel: t.nav.machineryMobile, icon: Wrench },
 ];
 
 interface AppShellProps {
