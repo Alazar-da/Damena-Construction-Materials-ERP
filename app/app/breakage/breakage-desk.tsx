@@ -84,7 +84,7 @@ export default function BreakageDesk({
       if (res.success) {
         setNotification({
           type: 'success',
-          message: 'ስብርባሪው በተሳካ ሁኔታ ተመዝግቧል፤ ከመጋዘን ክምችት ተቀንሷል።',
+          message: 'ስብርባሪው በተሳካ ሁኔታ ተመዝግቧል።',
         });
         setQuantity('10');
         setCustomNote('');
@@ -158,7 +158,7 @@ export default function BreakageDesk({
             የተሰበሩ እቃዎች ምዝገባ
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            በትራንስፖርት ወይም በሽያጭ ወቅት የተሰበሩ ብሎኮች እና ቴራሶን ይመዝግቡ (ከመጋዘን ክምችት ይቀነሳል)
+            በትራንስፖርት ወይም በሽያጭ ወቅት የተሰበሩ ብሎኮች እና ቴራሶን ይመዝግቡ
           </p>
         </div>
 
@@ -213,7 +213,7 @@ export default function BreakageDesk({
         <div>
           <div className="flex items-center justify-between mb-2.5">
             <label className="text-xs font-bold text-slate-800">
-              1. የተሰበረውን የምርት ዓይነት ይምረጡ (4ቱ ምርቶች)
+              1. የተሰበረውን የምርት ዓይነት ይምረጡ
             </label>
             <span className="text-[11px] font-mono font-bold text-slate-500">
               አሁን በክምችት ያለው፦ <span className="text-slate-900">{currentStock.toLocaleString()} ፍሬ</span>
@@ -280,7 +280,7 @@ export default function BreakageDesk({
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <label className="text-xs font-bold text-slate-800">
-              2. የተሰበረው ብዛት (ከክምችት የሚቀነስ)
+              2. የተሰበረው ብዛት
             </label>
             <span className="text-[11px] font-mono text-slate-500">
               ከስብርባሪ በኋላ የሚቀረው፦{' '}
@@ -404,7 +404,7 @@ export default function BreakageDesk({
             <span>
               {isPending
                 ? 'በመመዝገብ ላይ...'
-                : `ስብርባሪ መዝግብና ከክምችት ቀንስ (${enteredQty} ፍሬ)`}
+                : `ስብርባሪ መዝግብ (${enteredQty} ፍሬ)`}
             </span>
           </button>
         </div>
