@@ -248,7 +248,6 @@ export const dictionaries = {
       todayBroken: 'የዛሬ ስብርባሪ',
       monthBroken: 'የዚህ ወር ስብርባሪ',
       currentStock: 'በክምችት ላይ ያለ',
-      totalLoss: 'የስብርባሪ እቃዎች ዋጋ ግምት',
     },
   },
   en: {
@@ -490,7 +489,6 @@ export const dictionaries = {
       todayBroken: "Today's Broken Items",
       monthBroken: 'This Month Broken',
       currentStock: 'Current Stock',
-      totalLoss: 'Estimated Damage Value',
     },
   },
 } as const;

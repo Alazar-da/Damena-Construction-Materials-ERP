@@ -183,11 +183,6 @@ export default function ReportsView({
   const payrollPaid = payroll.reduce((n, p) => n + Number(p.amount), 0);
 
   const totalBrokenPieces = breakages.reduce((n, b) => n + Math.abs(Number(b.quantity_delta)), 0);
-  const totalBrokenValue = breakages.reduce((n, b) => {
-    const prod = relation(b.products);
-    const price = Number(prod?.selling_price || 0);
-    return n + Math.abs(Number(b.quantity_delta)) * price;
-  }, 0);
 
   // Daily map
   const byDay = new Map<
@@ -482,8 +477,8 @@ export default function ReportsView({
               <div className="truncate">ደመወዝ: <span className="font-semibold text-slate-700">{money(payrollPaid)}</span></div>
               <div className="truncate">ክፍያዎች: <span className="font-semibold text-slate-700">{payroll.length} ሰራተኞች</span></div>
               {totalBrokenPieces > 0 && (
-                <div className="truncate text-rose-600 font-bold">
-                  ስብርባሪ፦ {totalBrokenPieces} ፍሬ ({money(totalBrokenValue)})
+                <div className="truncate text-amber-600 font-bold">
+                  ስብርባሪ፦ {totalBrokenPieces} ፍሬ
                 </div>
               )}
             </div>
@@ -532,8 +527,8 @@ export default function ReportsView({
               <span>የደመወዝ ወጪ: {money(payrollPaid)}</span>
               <span>የተከፈሉ መዝገቦች: {payroll.length}</span>
               {totalBrokenPieces > 0 && (
-                <span className="text-rose-600 font-bold">
-                  ስብርባሪ፦ {totalBrokenPieces} ፍሬ ({money(totalBrokenValue)})
+                <span className="text-amber-600 font-bold">
+                  ስብርባሪ፦ {totalBrokenPieces} ፍሬ
                 </span>
               )}
             </div>
@@ -884,10 +879,6 @@ export default function ReportsView({
                     : name.includes(p.key);
                 });
                 const count = items.reduce((sum, i) => sum + Math.abs(Number(i.quantity_delta)), 0);
-                const value = items.reduce((sum, i) => {
-                  const prod = relation(i.products);
-                  return sum + Math.abs(Number(i.quantity_delta)) * Number(prod?.selling_price || 0);
-                }, 0);
 
                 return (
                   <div key={p.name} className="p-3.5 rounded-2xl bg-white border border-slate-200/90 shadow-2xs space-y-1">
@@ -895,11 +886,6 @@ export default function ReportsView({
                     <div className="text-lg sm:text-xl font-black font-mono text-rose-600">
                       -{count.toLocaleString()} <span className="text-[11px] font-sans font-bold text-slate-400">ፍሬ</span>
                     </div>
-                    {value > 0 && (
-                      <span className="text-[10px] font-mono font-semibold text-slate-500 block truncate">
-                        ግምት፦ {money(value)}
-                      </span>
-                    )}
                   </div>
                 );
               })}
@@ -910,7 +896,6 @@ export default function ReportsView({
               {pagedBreakages.map((item) => {
                 const prod = relation(item.products);
                 const qty = Math.abs(Number(item.quantity_delta));
-                const loss = qty * Number(prod?.selling_price || 0);
                 const dateStr = new Date(item.created_at).toLocaleDateString('en-KE', {
                   timeZone: 'Africa/Nairobi',
                 });
@@ -927,11 +912,6 @@ export default function ReportsView({
                       <span className="truncate text-slate-700 font-sans max-w-[180px]">{item.reason}</span>
                       <span>{dateStr}</span>
                     </div>
-                    {loss > 0 && (
-                      <div className="text-[10px] text-slate-400 font-mono">
-                        የኪሳራ ግምት፦ <span className="font-bold text-slate-700">{money(loss)}</span>
-                      </div>
-                    )}
                   </div>
                 );
               })}
@@ -945,7 +925,6 @@ export default function ReportsView({
                     <th className="py-3 px-4">ቀን</th>
                     <th className="py-3 px-4">የምርት ዓይነት</th>
                     <th className="py-3 px-4 text-center">የተሰበረው ብዛት</th>
-                    <th className="py-3 px-4 text-right">የኪሳራ ግምት</th>
                     <th className="py-3 px-4">ምክንያት / ማስታወሻ</th>
                   </tr>
                 </thead>
@@ -953,7 +932,6 @@ export default function ReportsView({
                   {pagedBreakages.map((item) => {
                     const prod = relation(item.products);
                     const qty = Math.abs(Number(item.quantity_delta));
-                    const loss = qty * Number(prod?.selling_price || 0);
                     const dateStr = new Date(item.created_at).toLocaleDateString('en-KE', {
                       timeZone: 'Africa/Nairobi',
                     });
@@ -966,9 +944,6 @@ export default function ReportsView({
                           <span className="inline-block px-2.5 py-0.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 font-black text-xs">
                             -{qty} {prod?.unit || 'ፍሬ'}
                           </span>
-                        </td>
-                        <td className="py-3 px-4 text-right font-mono font-bold text-slate-800">
-                          {loss > 0 ? money(loss) : '—'}
                         </td>
                         <td className="py-3 px-4 text-xs text-slate-600">{item.reason}</td>
                       </tr>
