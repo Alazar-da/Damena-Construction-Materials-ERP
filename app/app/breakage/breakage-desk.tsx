@@ -301,9 +301,14 @@ export default function BreakageDesk({
               type="number"
               name="quantity"
               min="1"
+              step="1"
               max={currentStock || undefined}
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
+              onWheel={(e) => {
+                e.currentTarget.blur();
+                e.preventDefault();
+              }}
               className="w-full text-center text-xl sm:text-2xl font-black font-mono text-slate-900 bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 focus:outline-none focus:border-amber-500 focus:bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               placeholder="0"
               required

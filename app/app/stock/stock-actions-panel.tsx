@@ -52,12 +52,16 @@ export default function StockActionsPanel({ cementOnHand }: { cementOnHand: numb
               className="erp-input font-mono font-bold"
               name="quantity"
               type="number"
-              min="0.001"
-              step="0.001"
+              min="1"
+              step="1"
               required
               placeholder="0"
               value={receiveQty}
               onChange={(e) => setReceiveQty(e.target.value)}
+              onWheel={(e) => {
+                e.currentTarget.blur();
+                e.preventDefault();
+              }}
             />
           </div>
 
@@ -121,12 +125,16 @@ export default function StockActionsPanel({ cementOnHand }: { cementOnHand: numb
               className="erp-input font-mono font-bold"
               name="quantity"
               type="number"
-              min="0.001"
-              step="0.001"
+              min="1"
+              step="1"
               required
               placeholder="0"
               value={issueQty}
               onChange={(e) => setIssueQty(e.target.value)}
+              onWheel={(e) => {
+                e.currentTarget.blur();
+                e.preventDefault();
+              }}
             />
           </div>
 

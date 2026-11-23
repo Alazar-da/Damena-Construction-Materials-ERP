@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import DisableNumberInputScroll from '@/components/disable-number-input-scroll';
 
 export const metadata: Metadata = {
   title: 'DAMENA ERP - የግንባታ እቃዎች እና የስራ ቦታ አስተዳደር',
@@ -21,6 +22,7 @@ export default function RootLayout({
         <meta httpEquiv="Content-Language" content="am" />
       </head>
       <body className="min-h-screen bg-slate-50 text-slate-900 antialiased selection:bg-sky-500 selection:text-white notranslate" translate="no">
+        <DisableNumberInputScroll />
         {children}
       </body>
     </html>

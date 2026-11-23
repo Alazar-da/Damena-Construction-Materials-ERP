@@ -81,12 +81,16 @@ export default function PayrollForm({ systemDate }: { systemDate: string }) {
           className="erp-input font-mono text-lg font-bold"
           name="amount"
           type="number"
-          min="0.01"
-          step="0.01"
+          min="1"
+          step="any"
           required
           placeholder="0.00"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
+          onWheel={(e) => {
+            e.currentTarget.blur();
+            e.preventDefault();
+          }}
         />
       </div>
 

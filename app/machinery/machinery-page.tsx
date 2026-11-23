@@ -201,6 +201,10 @@ export default function MachineryPage({
                 required
                 value={quantity}
                 onChange={(e) => setQuantity(e.target.value)}
+                onWheel={(e) => {
+                  e.currentTarget.blur();
+                  e.preventDefault();
+                }}
                 className="flex-1 h-12 bg-slate-50 border border-slate-200 rounded-xl text-center font-mono font-black text-base text-slate-900 focus:bg-white focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/15"
               />
               <button
