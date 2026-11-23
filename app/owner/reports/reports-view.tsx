@@ -12,6 +12,7 @@ import {
   ChevronRight,
   ArrowDownLeft,
   ArrowUpRight,
+  PackageMinus,
 } from 'lucide-react';
 
 type Sale = {
@@ -36,6 +37,9 @@ const recordedBy = (value: Sale['profiles']) => {
   const profile = Array.isArray(value) ? value[0] : value;
   return profile?.display_name || 'ያልታወቀ ተጠቃሚ';
 };
+
+const relation = <T,>(value: T | T[] | null | undefined): T | null | undefined =>
+  Array.isArray(value) ? value[0] : value;
 
 type Service = {
   id: string;
@@ -72,6 +76,24 @@ type AuditEntry = {
   profiles: { display_name: string | null } | { display_name: string | null }[] | null;
 };
 
+export type BreakageReportItem = {
+  id: string;
+  product_id: string;
+  quantity_delta: number;
+  movement_type: string;
+  reason: string;
+  created_at: string;
+  products?: {
+    name: string;
+    unit: string;
+    selling_price: number | null;
+  } | {
+    name: string;
+    unit: string;
+    selling_price: number | null;
+  }[] | null;
+};
+
 interface ReportsViewProps {
   basePath?: string;
   mode: string;
@@ -82,6 +104,7 @@ interface ReportsViewProps {
   payroll: Payroll[];
   production: Production[];
   audit: AuditEntry[];
+  breakages?: BreakageReportItem[];
   cementYieldChecks: {
     date: string;
     productName: string;
@@ -145,10 +168,11 @@ export default function ReportsView({
   payroll,
   production,
   audit,
+  breakages = [],
   cementYieldChecks,
 }: ReportsViewProps) {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'daily' | 'sales' | 'audit'>('daily');
+  const [activeTab, setActiveTab] = useState<'daily' | 'sales' | 'breakage' | 'audit'>('daily');
   const [customOpen, setCustomOpen] = useState(mode === 'custom');
   const [fromDate, setFromDate] = useState(from);
   const [toDate, setToDate] = useState(to);
@@ -158,13 +182,20 @@ export default function ReportsView({
   const serviceIncome = services.reduce((n, s) => n + Number(s.amount), 0);
   const payrollPaid = payroll.reduce((n, p) => n + Number(p.amount), 0);
 
+  const totalBrokenPieces = breakages.reduce((n, b) => n + Math.abs(Number(b.quantity_delta)), 0);
+  const totalBrokenValue = breakages.reduce((n, b) => {
+    const prod = relation(b.products);
+    const price = Number(prod?.selling_price || 0);
+    return n + Math.abs(Number(b.quantity_delta)) * price;
+  }, 0);
+
   // Daily map
   const byDay = new Map<
     string,
-    { sales: number; services: number; payroll: number; production: number }
+    { sales: number; services: number; payroll: number; production: number; breakage: number }
   >();
   const daily = (date: string) => {
-    if (!byDay.has(date)) byDay.set(date, { sales: 0, services: 0, payroll: 0, production: 0 });
+    if (!byDay.has(date)) byDay.set(date, { sales: 0, services: 0, payroll: 0, production: 0, breakage: 0 });
     return byDay.get(date)!;
   };
 
@@ -177,6 +208,12 @@ export default function ReportsView({
   });
   payroll.forEach((p) => (daily(p.period_start).payroll += Number(p.amount)));
   production.forEach((p) => (daily(p.production_date).production += Number(p.output_quantity)));
+  breakages.forEach((b) => {
+    const d = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Nairobi' }).format(
+      new Date(b.created_at)
+    );
+    daily(d).breakage += Math.abs(Number(b.quantity_delta));
+  });
 
   const dailyRows = [...byDay.entries()].sort((a, b) => b[0].localeCompare(a[0]));
 
@@ -184,6 +221,7 @@ export default function ReportsView({
   const [dailyPage, setDailyPage] = useState(1);
   const [salesPage, setSalesPage] = useState(1);
   const [auditPage, setAuditPage] = useState(1);
+  const [breakagePage, setBreakagePage] = useState(1);
 
   const totalDailyPages = Math.max(1, Math.ceil(dailyRows.length / PAGE_SIZE));
   const pagedDailyRows = dailyRows.slice((dailyPage - 1) * PAGE_SIZE, dailyPage * PAGE_SIZE);
@@ -194,6 +232,9 @@ export default function ReportsView({
   const totalAuditPages = Math.max(1, Math.ceil(audit.length / PAGE_SIZE));
   const pagedAudit = audit.slice((auditPage - 1) * PAGE_SIZE, auditPage * PAGE_SIZE);
 
+  const totalBreakagePages = Math.max(1, Math.ceil(breakages.length / PAGE_SIZE));
+  const pagedBreakages = breakages.slice((breakagePage - 1) * PAGE_SIZE, breakagePage * PAGE_SIZE);
+
   const applyPeriod = (newMode: string) => {
     if (newMode === 'custom') {
       setCustomOpen(true);
@@ -201,6 +242,7 @@ export default function ReportsView({
       setCustomOpen(false);
       setDailyPage(1);
       setSalesPage(1);
+      setBreakagePage(1);
       setAuditPage(1);
       router.push(`${basePath}?period=${newMode}`);
     }
@@ -210,6 +252,7 @@ export default function ReportsView({
     e.preventDefault();
     setDailyPage(1);
     setSalesPage(1);
+    setBreakagePage(1);
     setAuditPage(1);
     router.push(`${basePath}?period=custom&from=${fromDate}&to=${toDate}`);
   };
@@ -438,6 +481,11 @@ export default function ReportsView({
             <div className="pt-2 mt-2 border-t border-rose-100/80 text-[10px] font-mono text-slate-500 space-y-0.5">
               <div className="truncate">ደመወዝ: <span className="font-semibold text-slate-700">{money(payrollPaid)}</span></div>
               <div className="truncate">ክፍያዎች: <span className="font-semibold text-slate-700">{payroll.length} ሰራተኞች</span></div>
+              {totalBrokenPieces > 0 && (
+                <div className="truncate text-rose-600 font-bold">
+                  ስብርባሪ፦ {totalBrokenPieces} ፍሬ ({money(totalBrokenValue)})
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -483,6 +531,11 @@ export default function ReportsView({
             <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
               <span>የደመወዝ ወጪ: {money(payrollPaid)}</span>
               <span>የተከፈሉ መዝገቦች: {payroll.length}</span>
+              {totalBrokenPieces > 0 && (
+                <span className="text-rose-600 font-bold">
+                  ስብርባሪ፦ {totalBrokenPieces} ፍሬ ({money(totalBrokenValue)})
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -497,6 +550,7 @@ export default function ReportsView({
           {[
             { id: 'daily', label: 'ዕለታዊ እንቅስቃሴ', count: dailyRows.length, icon: ChartNoAxesCombined },
             { id: 'sales', label: 'የሽያጭ ደረሰኞች', count: sales.length, icon: Receipt },
+            { id: 'breakage', label: 'የተሰበሩ እቃዎች', count: breakages.length, icon: PackageMinus },
             { id: 'audit', label: 'የለውጥ ታሪክ', count: audit.length, icon: Activity },
           ].map((tab) => {
             const isActive = activeTab === tab.id;
@@ -578,6 +632,12 @@ export default function ReportsView({
                           +{values.production.toLocaleString()} pcs
                         </span>
                       </div>
+                      {values.breakage > 0 && (
+                        <div className="p-2 rounded-xl bg-rose-50/80 border border-rose-100 col-span-2 flex items-center justify-between">
+                          <span className="text-rose-600 text-[10px] font-sans font-semibold">የተሰበረ እቃ</span>
+                          <span className="font-black text-rose-700 font-mono">-{values.breakage.toLocaleString()} pcs</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
@@ -594,6 +654,7 @@ export default function ReportsView({
                     <th className="py-3 px-4">አገልግሎቶች</th>
                     <th className="py-3 px-4">ደመወዝ</th>
                     <th className="py-3 px-4 text-right">የተመረተ</th>
+                    <th className="py-3 px-4 text-right text-rose-700">የተሰበረ</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-mono">
@@ -605,6 +666,13 @@ export default function ReportsView({
                       <td className="py-3 px-4 text-slate-700">{money(values.payroll)}</td>
                       <td className="py-3 px-4 text-right font-black text-slate-900">
                         +{values.production.toLocaleString()}
+                      </td>
+                      <td className="py-3 px-4 text-right font-mono font-bold">
+                        {values.breakage > 0 ? (
+                          <span className="text-rose-600">-{values.breakage.toLocaleString()}</span>
+                        ) : (
+                          <span className="text-slate-300 font-normal">—</span>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -785,6 +853,156 @@ export default function ReportsView({
                   type="button"
                   disabled={salesPage >= totalSalesPages}
                   onClick={() => setSalesPage((p) => Math.min(totalSalesPages, p + 1))}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                >
+                  <span>ቀጣይ</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* =========================================================================
+            TAB: BREAKAGE / DAMAGED MATERIALS
+        ========================================================================= */}
+        {activeTab === 'breakage' && (
+          <div className="space-y-4">
+            {/* Product Damage Breakdown Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
+              {[
+                { name: '10/10 ብሎክ', key: '10/10' },
+                { name: '15/15 ብሎክ', key: '15/15' },
+                { name: '20/20 ብሎክ', key: '20/20' },
+                { name: 'ቴራሶ', key: 'terrace' },
+              ].map((p) => {
+                const items = breakages.filter((b) => {
+                  const prod = relation(b.products);
+                  const name = (prod?.name || '').toLowerCase();
+                  return p.key === 'terrace'
+                    ? name.includes('terrace') || name.includes('ቴራሶ')
+                    : name.includes(p.key);
+                });
+                const count = items.reduce((sum, i) => sum + Math.abs(Number(i.quantity_delta)), 0);
+                const value = items.reduce((sum, i) => {
+                  const prod = relation(i.products);
+                  return sum + Math.abs(Number(i.quantity_delta)) * Number(prod?.selling_price || 0);
+                }, 0);
+
+                return (
+                  <div key={p.name} className="p-3.5 rounded-2xl bg-white border border-slate-200/90 shadow-2xs space-y-1">
+                    <span className="text-xs font-bold text-slate-800 block truncate">{p.name}</span>
+                    <div className="text-lg sm:text-xl font-black font-mono text-rose-600">
+                      -{count.toLocaleString()} <span className="text-[11px] font-sans font-bold text-slate-400">ፍሬ</span>
+                    </div>
+                    {value > 0 && (
+                      <span className="text-[10px] font-mono font-semibold text-slate-500 block truncate">
+                        ግምት፦ {money(value)}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Mobile View: Breakage Cards */}
+            <div className="space-y-2.5 sm:hidden">
+              {pagedBreakages.map((item) => {
+                const prod = relation(item.products);
+                const qty = Math.abs(Number(item.quantity_delta));
+                const loss = qty * Number(prod?.selling_price || 0);
+                const dateStr = new Date(item.created_at).toLocaleDateString('en-KE', {
+                  timeZone: 'Africa/Nairobi',
+                });
+
+                return (
+                  <div key={item.id} className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs space-y-2">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                      <span className="font-black text-xs text-slate-900">{prod?.name || 'ምርት'}</span>
+                      <span className="px-2 py-0.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-black font-mono">
+                        -{qty} {prod?.unit || 'ፍሬ'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-slate-500 font-mono">
+                      <span className="truncate text-slate-700 font-sans max-w-[180px]">{item.reason}</span>
+                      <span>{dateStr}</span>
+                    </div>
+                    {loss > 0 && (
+                      <div className="text-[10px] text-slate-400 font-mono">
+                        የኪሳራ ግምት፦ <span className="font-bold text-slate-700">{money(loss)}</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop View: Breakage Table */}
+            <div className="hidden sm:block rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-xs">
+              <table className="w-full text-left text-xs sm:text-sm">
+                <thead className="bg-slate-50 text-[11px] font-bold uppercase text-slate-500 border-b border-slate-200">
+                  <tr>
+                    <th className="py-3 px-4">ቀን</th>
+                    <th className="py-3 px-4">የምርት ዓይነት</th>
+                    <th className="py-3 px-4 text-center">የተሰበረው ብዛት</th>
+                    <th className="py-3 px-4 text-right">የኪሳራ ግምት</th>
+                    <th className="py-3 px-4">ምክንያት / ማስታወሻ</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 font-sans">
+                  {pagedBreakages.map((item) => {
+                    const prod = relation(item.products);
+                    const qty = Math.abs(Number(item.quantity_delta));
+                    const loss = qty * Number(prod?.selling_price || 0);
+                    const dateStr = new Date(item.created_at).toLocaleDateString('en-KE', {
+                      timeZone: 'Africa/Nairobi',
+                    });
+
+                    return (
+                      <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="py-3 px-4 font-mono text-xs text-slate-500">{dateStr}</td>
+                        <td className="py-3 px-4 font-bold text-slate-900">{prod?.name || 'ምርት'}</td>
+                        <td className="py-3 px-4 text-center font-mono">
+                          <span className="inline-block px-2.5 py-0.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 font-black text-xs">
+                            -{qty} {prod?.unit || 'ፍሬ'}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-right font-mono font-bold text-slate-800">
+                          {loss > 0 ? money(loss) : '—'}
+                        </td>
+                        <td className="py-3 px-4 text-xs text-slate-600">{item.reason}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {breakages.length === 0 && (
+              <div className="p-10 text-center bg-white rounded-2xl border border-dashed border-slate-200 text-xs text-slate-400">
+                በዚህ ክፍለ-ጊዜ ውስጥ ምንም የተመዘገበ ስብርባሪ የለም።
+              </div>
+            )}
+
+            {/* Pagination Controls */}
+            {totalBreakagePages > 1 && (
+              <div className="flex items-center justify-center gap-2 p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs">
+                <button
+                  type="button"
+                  disabled={breakagePage <= 1}
+                  onClick={() => setBreakagePage((p) => Math.max(1, p - 1))}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>ቀዳሚ</span>
+                </button>
+                <span className="text-xs font-semibold font-mono text-slate-700 px-2">
+                  ገጽ {breakagePage} ከ {totalBreakagePages}
+                </span>
+                <button
+                  type="button"
+                  disabled={breakagePage >= totalBreakagePages}
+                  onClick={() => setBreakagePage((p) => Math.min(totalBreakagePages, p + 1))}
                   className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
                 >
                   <span>ቀጣይ</span>

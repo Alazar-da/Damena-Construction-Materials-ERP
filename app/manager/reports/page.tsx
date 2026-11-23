@@ -53,6 +53,7 @@ export default async function ManagerReportsPage({
     { data: production },
     { data: products },
     { data: audit },
+    { data: breakages },
   ] = await Promise.all([
     client
       .from('sales')
@@ -96,6 +97,16 @@ export default async function ManagerReportsPage({
       .select(
         'id,actor_id,entity_type,entity_id,before_data,after_data,created_at,profiles(display_name)'
       )
+      .gte('created_at', startTime)
+      .lte('created_at', endTime)
+      .order('created_at', { ascending: false })
+      .limit(1000),
+    client
+      .from('inventory_movements')
+      .select(
+        'id,product_id,quantity_delta,movement_type,reason,created_at,products(name,unit,selling_price)'
+      )
+      .eq('movement_type', 'breakage')
       .gte('created_at', startTime)
       .lte('created_at', endTime)
       .order('created_at', { ascending: false })
@@ -204,6 +215,7 @@ export default async function ManagerReportsPage({
       payroll={payroll ?? []}
       production={production ?? []}
       audit={audit ?? []}
+      breakages={breakages ?? []}
       cementYieldChecks={cementYieldChecks}
     />
   );

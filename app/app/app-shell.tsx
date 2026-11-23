@@ -18,6 +18,7 @@ import {
   ArrowUpRight,
   ShieldCheck,
   Crown,
+  PackageMinus,
   LogOut,
   UserRound,
   Wrench,
@@ -39,6 +40,7 @@ const navItems: NavItem[] = [
   { href: '/app/stock', label: t.stock.title, mobileLabel: t.nav.stockMobile, icon: Boxes },
   { href: '/app/production', label: t.production.title, mobileLabel: t.nav.productionMobile, icon: Factory },
   { href: '/app/sales', label: t.sales.title, mobileLabel: t.nav.salesMobile, icon: ShoppingCart },
+  { href: '/app/breakage', label: t.breakage?.title || 'የተሰበሩ እቃዎች', mobileLabel: t.nav.breakageMobile || 'ስብርባሪ', icon: PackageMinus },
   { href: '/app/payroll', label: t.payroll.title, mobileLabel: t.nav.payrollMobile, icon: WalletCards },
   { href: '/app/machinery', label: t.machinery.title, mobileLabel: t.nav.machineryMobile, icon: Wrench },
 ];

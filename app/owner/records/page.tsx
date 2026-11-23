@@ -10,7 +10,7 @@ export default async function OwnerRecordsPage(){
     client.from('service_payments').select('id,service_type,customer_name,amount,notes,created_at').order('created_at',{ascending:false}).limit(300),
     client.from('payroll_records').select('id,worker_name,pay_type,period_start,amount,rate_snapshot,payment_method,status,notes,created_at,created_by').eq('status','paid').order('created_at',{ascending:false}).limit(300),
     client.from('production_runs').select('id,production_date,output_product_id,output_quantity,notes,created_at,products(name,unit)').order('created_at',{ascending:false}).limit(300),
-    client.from('inventory_movements').select('id,product_id,quantity_delta,movement_type,reason,created_at,products(name,unit)').in('movement_type',['receipt','internal_use']).order('created_at',{ascending:false}).limit(300),
+    client.from('inventory_movements').select('id,product_id,quantity_delta,movement_type,reason,created_at,products(name,unit)').in('movement_type',['receipt','internal_use','breakage']).order('created_at',{ascending:false}).limit(300),
   ]);
   return <OwnerRecords sales={sales??[]} services={services??[]} payroll={payroll??[]} production={production??[]} movements={(movements??[]).filter(m=>m.reason!=='Used in production')}/>;
 }
