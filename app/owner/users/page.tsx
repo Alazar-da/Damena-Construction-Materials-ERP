@@ -1,12 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 import { db } from '@/lib/supabase/server';
-import { createAdmin } from './actions';
+import CreateUserForm from './create-user-form';
 import {
   ShieldCheck,
-  UserPlus,
-  KeyRound,
-  Mail,
-  User,
   CheckCircle2,
   AlertCircle,
   Crown,
@@ -117,115 +113,8 @@ export default async function OwnerUsersPage({
         </div>
       )}
 
-      {/* 2. CREATE ACCOUNT FORM WITH ROLE DROPDOWN */}
-      <form action={createAdmin} className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-5 sm:p-7 space-y-5">
-        <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold shrink-0 shadow-2xs">
-              <UserPlus className="w-4 h-4" />
-            </div>
-            <div>
-              <h2 className="text-base font-black text-slate-900">አዲስ መለያ ፍጠር</h2>
-              <p className="text-xs text-slate-400">የመለያውን ሚና በመምረጥ ኢሜይልና ይለፍ ቃል ይመዝግቡ</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          {/* User Role Selection Dropdown */}
-          <div className="space-y-1.5 sm:col-span-2">
-            <label className="text-xs font-black text-slate-800 uppercase tracking-wider block flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-slate-400" />
-              <span>የመለያ ዓይነት / ሚና <span className="text-rose-500">*</span></span>
-            </label>
-            <select
-              name="role"
-              required
-              defaultValue="manager"
-              className="erp-input h-12 px-3.5 text-sm font-bold text-slate-900 w-full bg-slate-50 border border-slate-300 rounded-xl cursor-pointer focus:bg-white"
-            >
-              <option value="manager">💼 ስራ አስኪያጅ</option>
-              <option value="admin">👷 አስተዳዳሪ</option>
-            </select>
-          </div>
-
-          {/* Display Name */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-black text-slate-800 uppercase tracking-wider block flex items-center gap-1.5">
-              <User className="w-3.5 h-3.5 text-slate-400" />
-              <span>የተጠቃሚው ሙሉ ስም <span className="text-rose-500">*</span></span>
-            </label>
-            <input
-              name="display_name"
-              required
-              minLength={2}
-              maxLength={120}
-              className="erp-input h-11 px-3 text-sm font-bold text-slate-900 w-full placeholder:text-slate-400 placeholder:font-normal"
-              placeholder="ለምሳሌ፦ አበበ ከበደ"
-              autoFocus
-            />
-          </div>
-
-          {/* Email */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-black text-slate-800 uppercase tracking-wider block flex items-center gap-1.5">
-              <Mail className="w-3.5 h-3.5 text-slate-400" />
-              <span>ኢሜይል አድራሻ <span className="text-rose-500">*</span></span>
-            </label>
-            <input
-              name="email"
-              type="email"
-              required
-              className="erp-input h-11 px-3 text-sm font-bold text-slate-900 w-full placeholder:text-slate-400 placeholder:font-normal"
-              placeholder="user@example.com"
-            />
-          </div>
-
-          {/* Password */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-black text-slate-800 uppercase tracking-wider block flex items-center gap-1.5">
-              <KeyRound className="w-3.5 h-3.5 text-slate-400" />
-              <span>የይለፍ ቃል <span className="text-rose-500">*</span></span>
-            </label>
-            <input
-              name="password"
-              type="password"
-              minLength={8}
-              autoComplete="new-password"
-              required
-              className="erp-input h-11 px-3 text-sm font-mono font-bold text-slate-900 w-full placeholder:text-slate-400 placeholder:font-normal"
-              placeholder="ቢያንስ 8 ፊደላት ወይም ቁጥሮች"
-            />
-          </div>
-
-          {/* Confirm Password */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-black text-slate-800 uppercase tracking-wider block flex items-center gap-1.5">
-              <KeyRound className="w-3.5 h-3.5 text-slate-400" />
-              <span>የይለፍ ቃሉን ደግመው ያረጋግጡ <span className="text-rose-500">*</span></span>
-            </label>
-            <input
-              name="confirm_password"
-              type="password"
-              minLength={8}
-              autoComplete="new-password"
-              required
-              className="erp-input h-11 px-3 text-sm font-mono font-bold text-slate-900 w-full placeholder:text-slate-400 placeholder:font-normal"
-              placeholder="የይለፍ ቃሉን ደግመው ያስገቡ"
-            />
-          </div>
-        </div>
-
-        <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-end gap-3">
-          <button
-            type="submit"
-            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm transition-colors cursor-pointer shadow-xs shrink-0"
-          >
-            <UserPlus className="w-4 h-4" />
-            <span>መለያውን ፍጠር</span>
-          </button>
-        </div>
-      </form>
+      {/* 2. CREATE ACCOUNT FORM WITH ROLE DROPDOWN & PASSWORD VISIBILITY TOGGLE */}
+      <CreateUserForm />
 
       {/* 3. REGISTERED ACCOUNTS LIST */}
       <section className="bg-white rounded-3xl border border-slate-200/90 shadow-xs overflow-hidden">

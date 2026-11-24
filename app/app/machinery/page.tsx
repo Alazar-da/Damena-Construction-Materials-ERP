@@ -1,11 +1,28 @@
+import { redirect } from 'next/navigation';
 import { db } from '@/lib/supabase/server';
-import MachineryPage from '@/app/machinery/machinery-page';
 
 export const dynamic = 'force-dynamic';
 
-export default async function StaffMachineryPage({ searchParams }: { searchParams: Promise<{ error?: string; success?: string }> }) {
+export default async function StaffMachineryPage() {
   const client = await db();
-  const { data } = await client.from('machinery').select('id,name,category,quantity,status,location,notes,photo_path,created_at,profiles:created_by(display_name)').order('created_at', { ascending: false });
-  const machinery = await Promise.all((data ?? []).map(async (item) => ({ ...item, photo_url: item.photo_path ? (await client.storage.from('machinery-photos').createSignedUrl(item.photo_path, 3600)).data?.signedUrl || null : null })));
-  return <MachineryPage machinery={machinery} returnTo="/app/machinery" title="የማሽነሪ ክምችት" description="የምርት ማሽኖችን፣ መሳሪያዎችን እና ተሽከርካሪዎችን ይመዝግቡ።" searchParams={await searchParams} />;
+  const { data: { user } } = await client.auth.getUser();
+  if (!user) {
+    redirect('/login');
+  }
+
+  const { data: profile } = await client
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  const role = profile?.role;
+
+  if (role === 'super_admin') {
+    redirect('/owner/machinery');
+  } else if (role === 'manager') {
+    redirect('/manager/machinery');
+  } else {
+    redirect('/app');
+  }
 }

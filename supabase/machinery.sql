@@ -26,7 +26,16 @@ drop policy if exists machinery_insert on public.machinery;
 create policy machinery_insert on public.machinery for insert to authenticated
   with check (public.is_admin() and (created_by is null or created_by = auth.uid()));
 
-grant select, insert on public.machinery to authenticated;
+drop policy if exists machinery_update on public.machinery;
+create policy machinery_update on public.machinery for update to authenticated
+  using (public.is_admin())
+  with check (public.is_admin());
+
+drop policy if exists machinery_delete on public.machinery;
+create policy machinery_delete on public.machinery for delete to authenticated
+  using (public.is_admin());
+
+grant select, insert, update, delete on public.machinery to authenticated;
 
 insert into storage.buckets (id, name, public)
 values ('machinery-photos', 'machinery-photos', false)
@@ -39,3 +48,7 @@ create policy machinery_photos_read on storage.objects for select to authenticat
 drop policy if exists machinery_photos_insert on storage.objects;
 create policy machinery_photos_insert on storage.objects for insert to authenticated
   with check (bucket_id = 'machinery-photos' and public.is_admin());
+
+drop policy if exists machinery_photos_delete on storage.objects;
+create policy machinery_photos_delete on storage.objects for delete to authenticated
+  using (bucket_id = 'machinery-photos' and public.is_admin());

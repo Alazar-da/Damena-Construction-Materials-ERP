@@ -146,7 +146,7 @@ function ManagerShellInner({
         </div>
 
         {/* Manager Navigation Items (ONLY 4 Items) */}
-        <nav className="flex-1 overflow-y-auto no-scrollbar md:max-xl:px-2 md:max-xl:py-4 md:max-xl:space-y-2 xl:px-2.5 xl:py-4 xl:space-y-1">
+        <nav className="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar md:max-xl:px-2 md:max-xl:py-4 md:max-xl:space-y-2 xl:px-2.5 xl:py-4 xl:space-y-1">
           {managerNavItems.map((item) => {
             const Icon = item.icon;
             const isActive =
@@ -189,12 +189,6 @@ function ManagerShellInner({
 
                 {!isCollapsed && (
                   <span className="truncate text-sm hidden xl:inline">{item.label}</span>
-                )}
-
-                {isCollapsed && (
-                  <div className="absolute left-full ml-2.5 px-2.5 py-1 bg-slate-900 text-white text-xs font-medium rounded-md shadow-lg border border-slate-800 whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-150 z-50 hidden xl:block">
-                    {item.label}
-                  </div>
                 )}
               </Link>
             );
@@ -339,7 +333,7 @@ function ManagerShellInner({
           MAIN CONTENT AREA
       ========================================================================= */}
       <div
-        className={`flex-1 flex flex-col transition-all duration-300 ease-in-out md:max-xl:ml-20 ${
+        className={`flex-1 flex flex-col min-w-0 overflow-x-hidden transition-all duration-300 ease-in-out md:max-xl:ml-20 ${
           isCollapsed ? 'xl:ml-18' : 'xl:ml-60'
         }`}
       >
