@@ -2,13 +2,52 @@
   "name": "damena-construction-materials-erp",
   "version": "1.0.0",
   "private": true,
+  "main": "electron/main.js",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit --incremental false",
-    "test": "vitest run"
+    "test": "vitest run",
+    "desktop:dev": "electron electron/main.js",
+    "desktop:dist": "electron-builder --win"
+  },
+  "build": {
+    "appId": "com.damena.erp",
+    "productName": "Damena ERP",
+    "copyright": "Copyright © 2026 Damena Construction Materials",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "electron/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "electron/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Damena ERP",
+      "uninstallDisplayName": "Damena ERP"
+    }
   },
   "dependencies": {
     "@supabase/ssr": "latest",
@@ -26,6 +65,8 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "autoprefixer": "^10.6.2",
+    "electron": "^45.4.1",
+    "electron-builder": "^26.18.0",
     "eslint": "^9.39.5",
     "eslint-config-next": "^16.4.5",
     "postcss": "^8.5.32",

@@ -520,16 +520,16 @@ function AppShellInner({
             </Link>
           </div>
 
-          {/* PC-ONLY: Quick Header Actions (ሲሚንቶ, ምርት, ሽያጭ) */}
-          <div className="flex items-center gap-1.5 sm:gap-2 md:max-xl:hidden">
+          {/* PC-ONLY: Quick Header Actions & User Profile */}
+          <div className="flex items-center gap-1.5 sm:gap-2.5 md:max-xl:hidden">
             {isSuperAdmin && (
               <Link
                 href="/owner"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-300 bg-emerald-50 text-xs font-bold text-emerald-900 hover:bg-emerald-100 transition-colors mr-1"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-emerald-300 bg-emerald-50 text-xs font-bold text-emerald-900 hover:bg-emerald-100 transition-colors mr-1"
                 title="ወደ ዋና ባለቤት ገጽ"
               >
                 <Crown className="w-3.5 h-3.5 text-emerald-700" />
-                <span>ወደ ዋና ባለቤት ገጽ</span>
+                <span className="hidden lg:inline">ወደ ዋና ባለቤት ገጽ</span>
               </Link>
             )}
             <Link
@@ -537,7 +537,7 @@ function AppShellInner({
               onClick={() => {
                 if (pathname !== '/app/stock') setNavigating(true);
               }}
-              className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors cursor-pointer"
+              className="hidden 2xl:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-colors cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5 text-slate-500" />
               <span>ሲሚንቶ</span>
@@ -547,7 +547,7 @@ function AppShellInner({
               onClick={() => {
                 if (pathname !== '/app/production') setNavigating(true);
               }}
-              className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors cursor-pointer"
+              className="hidden 2xl:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-colors cursor-pointer"
             >
               <ArrowUpRight className="w-3.5 h-3.5 text-slate-500" />
               <span>ምርት</span>
@@ -557,16 +557,48 @@ function AppShellInner({
               onClick={() => {
                 if (pathname !== '/app/sales') setNavigating(true);
               }}
-              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white rounded-lg transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold bg-slate-950 hover:bg-slate-900 text-white rounded-xl shadow-xs transition-colors cursor-pointer"
             >
-              <ShoppingCart className="w-3.5 h-3.5 text-slate-300" />
-              <span>ሽያጭ</span>
+              <ShoppingCart className="w-3.5 h-3.5 text-amber-400" />
+              <span>ሽያጭ መዝግብ</span>
+            </Link>
+
+            {/* Notification Bell */}
+            <Link
+              href={isSuperAdmin ? '/owner/reports' : '/app'}
+              className="relative p-2 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+              title="ማሳወቂያዎች"
+            >
+              <Bell className="w-4 h-4" />
+              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-emerald-500 ring-2 ring-white" />
+            </Link>
+
+            <div className="h-5 w-px bg-slate-200 mx-1 hidden sm:block" />
+
+            {/* Desktop User Profile Chip */}
+            <Link
+              href="/app/profile"
+              className="flex items-center gap-2 p-1 pl-1.5 pr-2.5 rounded-full hover:bg-slate-100 transition-all border border-slate-200/90 bg-slate-50/80 group"
+              title={displayName || userEmail}
+            >
+              <div className="w-7 h-7 rounded-full bg-slate-950 text-white font-black text-xs flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform">
+                {(displayName || userEmail || 'A').charAt(0).toUpperCase()}
+              </div>
+              <div className="text-left hidden lg:block">
+                <span className="text-xs font-bold text-slate-900 max-w-[120px] truncate block leading-tight">
+                  {displayName || userEmail?.split('@')[0] || 'አስተዳዳሪ'}
+                </span>
+                <span className="text-[9px] font-mono text-slate-400 block leading-tight">
+                  {isSuperAdmin ? 'ዋና አስተዳዳሪ' : 'አስተዳዳሪ'}
+                </span>
+              </div>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600" />
             </Link>
           </div>
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 p-3.5 sm:p-6 lg:p-8 max-w-6xl w-full mx-auto pb-8">
+        <main className="flex-1 p-3.5 sm:p-6 lg:p-8 max-w-7xl 2xl:max-w-[1440px] w-full mx-auto pb-8">
           {children}
         </main>
       </div>
