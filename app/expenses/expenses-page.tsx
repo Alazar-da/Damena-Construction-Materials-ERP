@@ -47,7 +47,7 @@ const CATEGORY_META: Record<
     label: 'ለአገልግሎት',
     shortLabel: 'ለአገልግሎት',
     dot: 'bg-amber-500',
-    presets: ['የባትሪ አሲድ', 'የብየዳ ዘንግ', 'ሌላ ወጪ'],
+    presets: ['የባትሪ አሲድ', 'ብረት', 'ሌላ ወጪ'],
   },
   other: {
     label: 'ሌላ ወጪ',
