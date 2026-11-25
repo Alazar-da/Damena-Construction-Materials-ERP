@@ -19,6 +19,7 @@ import {
   Users,
   UserRound,
   Wrench,
+  Receipt,
   Bell,
   Crown,
 } from 'lucide-react';
@@ -36,6 +37,7 @@ interface OwnerNavItem {
 const ownerNavItems: OwnerNavItem[] = [
   { href: '/owner', label: t.nav.overview, mobileLabel: t.nav.overviewMobile, icon: TrendingUp },
   { href: '/owner/prices', label: t.nav.prices, mobileLabel: t.nav.pricesMobile, icon: Tag },
+  { href: '/owner/expenses', label: 'ወጪ (ግዢ)', mobileLabel: 'ወጪ', icon: Receipt },
   { href: '/owner/reports', label: t.nav.reports, mobileLabel: t.nav.reportsMobile, icon: ChartNoAxesCombined },
   { href: '/owner/records', label: t.nav.records, mobileLabel: t.nav.recordsMobile, icon: ClipboardPenLine },
   { href: '/owner/users', label: t.nav.users, mobileLabel: t.nav.usersMobile, icon: Users },

@@ -9,6 +9,7 @@ import {
   Tag,
   ChartNoAxesCombined,
   Wrench,
+  Receipt,
   ChevronLeft,
   ChevronDown,
   Menu,
@@ -31,6 +32,7 @@ interface NavItem {
 const managerNavItems: NavItem[] = [
   { href: '/manager', label: t.nav.overview, mobileLabel: t.nav.overviewMobile, icon: LayoutDashboard },
   { href: '/manager/prices', label: t.nav.prices, mobileLabel: t.nav.pricesMobile, icon: Tag },
+  { href: '/manager/expenses', label: 'ወጪ (ግዢ)', mobileLabel: 'ወጪ', icon: Receipt },
   { href: '/manager/reports', label: t.nav.reports, mobileLabel: t.nav.reportsMobile, icon: ChartNoAxesCombined },
   { href: '/manager/machinery', label: t.nav.machinery, mobileLabel: t.nav.machineryMobile, icon: Wrench },
 ];
