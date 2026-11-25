@@ -49,9 +49,10 @@ interface ServicePayment {
 }
 
 const serviceLabels: Record<string, { label: string; icon: string }> = {
-  battery_charging: { label: 'ባትሪ መሙላት', icon: '⚡' },
+  battery_charging: { label: 'ባትሪ ቻርጅ', icon: '⚡' },
   battery_acid: { label: 'የባትሪ አሲድ መሙላት', icon: '🧪' },
   welding: { label: 'ብየዳ', icon: '🔥' },
+  door_window: { label: 'በር እና መስኮት', icon: '🚪' },
 };
 
 const imageFor = (name: string) =>
@@ -66,12 +67,9 @@ const imageFor = (name: string) =>
 const displayProductName = (name: string) =>
   name.replace(/(\d+\s*\/\s*\d+)\s*Block/i, '$1 ብሎክ').replace(/Terrace/i, 'ቴራሶ');
 
-const formatDate = (value: string) =>
-  new Date(value).toLocaleString('am-ET', {
-    timeZone: 'Africa/Nairobi',
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  });
+import { formatEthiopicDate, formatEthiopicDateTime } from '@/lib/ethiopian-calendar';
+
+const formatDate = (value: string) => formatEthiopicDateTime(value);
 
 export default function SalesDesk({
   products,
@@ -427,7 +425,7 @@ export default function SalesDesk({
               <span>የአገልግሎት ዓይነቶች</span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {Object.entries(serviceLabels).map(([key, info]) => {
                 const isSelected = serviceType === key;
                 return (
@@ -598,7 +596,7 @@ export default function SalesDesk({
                           <td className="py-3 px-4 text-slate-700">
                             {x.payment_method === 'cash' ? 'ጥሬ ገንዘብ' : 'ባንክ / ዲጂታል'}
                           </td>
-                          <td className="py-3 px-4 text-slate-500 font-mono text-xs">{x.sale_date}</td>
+                          <td className="py-3 px-4 text-slate-500 font-mono text-xs">{formatEthiopicDate(x.sale_date, { withYearSuffix: true })}</td>
                           <td className="py-3 px-4 text-slate-700 font-semibold">
                             {(Array.isArray(x.profiles) ? x.profiles[0] : x.profiles)?.display_name || 'ያልታወቀ ተጠቃሚ'}
                           </td>

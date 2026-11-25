@@ -132,7 +132,7 @@ create or replace function public.owner_update_service_payment(
 declare r public.service_payments%rowtype; before_data jsonb;
 begin
   if not exists(select 1 from public.profiles where id=auth.uid() and role='super_admin' and is_active) then raise exception 'owner access required'; end if;
-  if p_service_type not in ('battery_charging','battery_acid','welding') then raise exception 'invalid service'; end if;
+  if p_service_type not in ('battery_charging','battery_acid','welding','door_window') then raise exception 'invalid service'; end if;
   if p_amount is null or p_amount<0 then raise exception 'amount cannot be negative'; end if;
   select * into r from public.service_payments where id=p_id for update;
   if not found then raise exception 'service payment not found'; end if;
