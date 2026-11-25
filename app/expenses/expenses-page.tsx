@@ -47,13 +47,13 @@ const CATEGORY_META: Record<
     label: 'ለአገልግሎት',
     shortLabel: 'ለአገልግሎት',
     dot: 'bg-amber-500',
-    presets: ['የባትሪ አሲድ', 'የብየዳ ዘንግ'],
+    presets: ['የባትሪ አሲድ', 'የብየዳ ዘንግ', 'ሌላ ወጪ'],
   },
   other: {
     label: 'ሌላ ወጪ',
     shortLabel: 'ሌላ',
-    dot: 'bg-slate-400',
-    presets: ['ትራንስፖርት', 'ጥገና', 'መብራት/ውሃ', 'ሌላ'],
+    dot: 'bg-purple-500',
+    presets: ['ሌላ ወጪ'],
   },
 };
 
@@ -81,16 +81,17 @@ export default function ExpensesPage({
   const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Nairobi' }).format(new Date());
   const thisMonthPrefix = today.substring(0, 7);
 
-  // Create Form State
-  const [category, setCategory] = useState<ExpenseCategory>('production_materials');
-  const [itemName, setItemName] = useState<string>('ሲሚንቶ');
+  // Create Form State - 2 Sections only: 'production_materials' & 'workshop_services'
+  const [category, setCategory] = useState<'production_materials' | 'workshop_services'>('production_materials');
+  const [selectedPreset, setSelectedPreset] = useState<string>('ሲሚንቶ');
+  const [customItemName, setCustomItemName] = useState<string>('');
   const [amount, setAmount] = useState<string>('');
   const [expenseDate, setExpenseDate] = useState<string>(today);
   const [notes, setNotes] = useState<string>('');
 
   // List & Filter State
   const [searchQuery, setSearchQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<'all' | ExpenseCategory>('all');
+  const [categoryFilter, setCategoryFilter] = useState<'all' | 'production_materials' | 'workshop_services'>('all');
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 8;
 
@@ -108,10 +109,18 @@ export default function ExpensesPage({
     return () => el.removeEventListener('wheel', preventWheel);
   }, []);
 
-  const handleCategoryChange = (nextCategory: ExpenseCategory) => {
+  const handleCategoryChange = (nextCategory: 'production_materials' | 'workshop_services') => {
     setCategory(nextCategory);
     const defaultPreset = CATEGORY_META[nextCategory].presets[0];
-    setItemName(defaultPreset === 'ሌላ' ? '' : defaultPreset);
+    setSelectedPreset(defaultPreset);
+    setCustomItemName('');
+  };
+
+  const handlePresetSelect = (preset: string) => {
+    setSelectedPreset(preset);
+    if (preset !== 'ሌላ ወጪ') {
+      setCustomItemName('');
+    }
   };
 
   // Summary Stats
@@ -125,7 +134,12 @@ export default function ExpensesPage({
 
   // Filtered List
   const filteredExpenses = expenses.filter((e) => {
-    const matchesCat = categoryFilter === 'all' || e.category === categoryFilter;
+    const matchesCat =
+      categoryFilter === 'all'
+        ? true
+        : categoryFilter === 'production_materials'
+        ? e.category === 'production_materials'
+        : e.category === 'workshop_services' || e.category === 'other';
     const q = searchQuery.trim().toLowerCase();
     const matchesSearch =
       !q ||
@@ -202,9 +216,9 @@ export default function ExpensesPage({
 
           <h2 className="text-sm font-bold text-slate-900">አዲስ ወጪ መዝግብ</h2>
 
-          {/* Sleek 3-Pill Category Segmented Control */}
-          <div className="grid grid-cols-3 gap-1 p-1 rounded-xl bg-slate-100">
-            {(['production_materials', 'workshop_services', 'other'] as ExpenseCategory[]).map((cat) => {
+          {/* 2-Pill Category Segmented Control */}
+          <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-slate-100">
+            {(['production_materials', 'workshop_services'] as const).map((cat) => {
               const meta = CATEGORY_META[cat];
               const isSelected = category === cat;
               return (
@@ -212,7 +226,7 @@ export default function ExpensesPage({
                   key={cat}
                   type="button"
                   onClick={() => handleCategoryChange(cat)}
-                  className={`py-2 px-2 rounded-lg text-xs font-bold transition-all cursor-pointer truncate ${
+                  className={`py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer text-center ${
                     isSelected
                       ? 'bg-white text-slate-900 shadow-2xs'
                       : 'text-slate-500 hover:text-slate-800'
@@ -224,35 +238,59 @@ export default function ExpensesPage({
             })}
           </div>
 
-          {/* Item Name + Quick Chips */}
+          {/* Item Selection (Presets) + Conditional "ሌላ ወጪ" Input */}
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-slate-600 block">የእቃው / ወጪው ስም</label>
-            <div className="flex flex-wrap gap-1.5">
-              {activePresets.map((preset) => (
-                <button
-                  key={preset}
-                  type="button"
-                  onClick={() => setItemName(preset === 'ሌላ' ? '' : preset)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors cursor-pointer ${
-                    itemName === preset
-                      ? 'bg-slate-900 text-white border-slate-900'
-                      : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                  }`}
-                >
-                  {preset}
-                </button>
-              ))}
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold text-slate-600 block">የእቃው / ወጪው ዓይነት</label>
+              {selectedPreset !== 'ሌላ ወጪ' && (
+                <span className="text-[11px] font-medium text-slate-400">
+                  የተመረጠ፦ <strong className="text-slate-800 font-bold">{selectedPreset}</strong>
+                </span>
+              )}
             </div>
-            <input
-              name="item_name"
-              required
-              minLength={2}
-              maxLength={120}
-              value={itemName}
-              onChange={(e) => setItemName(e.target.value)}
-              className="erp-input h-11 px-3.5 text-sm font-semibold text-slate-900 w-full placeholder:text-slate-400 placeholder:font-normal"
-              placeholder="ስም ያስገቡ (ለምሳሌ፦ ሲሚንቶ፣ አሸዋ፣ ኮሚቼ...)"
-            />
+
+            <div className="grid grid-cols-3 gap-2">
+              {activePresets.map((preset) => {
+                const isSelected = selectedPreset === preset;
+                return (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => handlePresetSelect(preset)}
+                    className={`py-2.5 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer text-center flex items-center justify-center gap-1.5 ${
+                      isSelected
+                        ? 'bg-slate-900 text-white border-slate-900 shadow-2xs'
+                        : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                    }`}
+                  >
+                    {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />}
+                    <span className="truncate">{preset}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* If "ሌላ ወጪ" is chosen, prompt the user for the item name. Otherwise, no visible text input is needed */}
+            {selectedPreset === 'ሌላ ወጪ' ? (
+              <div className="pt-1.5 space-y-1.5">
+                <label className="text-xs font-semibold text-slate-700 block">
+                  የወጪው ዓይነት ወይም ስም ምንድን ነው? <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  name="item_name"
+                  required
+                  minLength={2}
+                  maxLength={120}
+                  value={customItemName}
+                  onChange={(e) => setCustomItemName(e.target.value)}
+                  autoFocus
+                  className="erp-input h-11 px-3.5 text-sm font-semibold text-slate-900 w-full placeholder:text-slate-400 placeholder:font-normal"
+                  placeholder="የወጪውን ዓይነት ወይም ስም እዚህ ያስገቡ..."
+                />
+              </div>
+            ) : (
+              <input type="hidden" name="item_name" value={selectedPreset} />
+            )}
           </div>
 
           {/* Amount & Date */}
@@ -342,15 +380,14 @@ export default function ExpensesPage({
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
             {[
               { id: 'all', label: 'ሁሉም' },
-              { id: 'production_materials', label: 'ለምርት' },
+              { id: 'production_materials', label: 'ለቴራሶ እና ብሎክ' },
               { id: 'workshop_services', label: 'ለአገልግሎት' },
-              { id: 'other', label: 'ሌላ' },
             ].map((tab) => (
               <button
                 key={tab.id}
                 type="button"
                 onClick={() => {
-                  setCategoryFilter(tab.id as 'all' | ExpenseCategory);
+                  setCategoryFilter(tab.id as 'all' | 'production_materials' | 'workshop_services');
                   setPage(1);
                 }}
                 className={`px-3 py-1 rounded-lg font-semibold text-xs transition-colors shrink-0 cursor-pointer ${
@@ -491,12 +528,12 @@ export default function ExpensesPage({
                 <label className="text-xs font-semibold text-slate-600 block">ምድብ</label>
                 <select
                   name="category"
-                  defaultValue={editingItem.category}
+                  defaultValue={editingItem.category === 'other' ? 'workshop_services' : editingItem.category}
                   className="erp-input h-10 px-3 text-xs font-semibold text-slate-900 w-full bg-slate-50 border border-slate-200 rounded-xl"
                 >
                   <option value="production_materials">ለቴራሶ እና ብሎክ</option>
                   <option value="workshop_services">ለአገልግሎት</option>
-                  <option value="other">ሌላ ወጪ</option>
+                  {editingItem.category === 'other' && <option value="other">ሌላ ወጪ</option>}
                 </select>
               </div>
 
