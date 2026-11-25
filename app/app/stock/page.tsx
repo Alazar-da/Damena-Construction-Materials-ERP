@@ -1,8 +1,16 @@
 import Image from 'next/image';
+import { createClient } from '@supabase/supabase-js';
 import { db } from '@/lib/supabase/server';
-import StockActionsPanel from './stock-actions-panel';
+import StockActionsPanel, { PendingCementDelivery } from './stock-actions-panel';
 import StockActivityHistory from './stock-activity-history';
 import { Warehouse } from 'lucide-react';
+
+function getServiceClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
+  if (!url || !key) return null;
+  return createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
+}
 
 const storeNames = [
   'Cement 50kg',
@@ -22,6 +30,20 @@ const imageFor = (name: string) =>
     : name === '20/20 Block'
     ? '/products/block-20-20.png'
     : '/products/terrace.png';
+
+interface FallbackExpenseRow {
+  id: string;
+  expense_date: string;
+  item_name: string;
+  quantity?: number | null;
+  verified_quantity?: number | null;
+  notes?: string | null;
+  delivery_status?: string | null;
+  created_at: string;
+  profiles?: {
+    display_name?: string | null;
+  } | { display_name?: string | null }[] | null;
+}
 
 export default async function StockPage() {
   const c = await db();
@@ -46,6 +68,75 @@ export default async function StockPage() {
   if (itemsError) throw new Error(`Unable to read products: ${itemsError.message}`);
   if (movementsError)
     throw new Error(`Unable to read movements: ${movementsError.message}`);
+
+  // Fetch pending OR partial (missing bags) cement deliveries (Strictly NO amount column to protect pricing)
+  let pendingDeliveries: PendingCementDelivery[] = [];
+  try {
+    const serviceClient = getServiceClient();
+    if (serviceClient) {
+      const { data: rawDeliveries, error: queryError } = await serviceClient
+        .from('expenses')
+        .select(`
+          id,
+          expense_date,
+          item_name,
+          quantity,
+          verified_quantity,
+          notes,
+          delivery_status,
+          created_at,
+          profiles:recorded_by (
+            display_name
+          )
+        `)
+        .eq('category', 'production_materials')
+        .ilike('item_name', '%ሲሚንቶ%')
+        .in('delivery_status', ['pending', 'delivered'])
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (!queryError && rawDeliveries) {
+        pendingDeliveries = (rawDeliveries as unknown as FallbackExpenseRow[])
+          .filter((exp) => {
+            if (exp.delivery_status === 'pending') return true;
+            if (
+              exp.delivery_status === 'delivered' &&
+              exp.quantity != null &&
+              exp.verified_quantity != null &&
+              Number(exp.verified_quantity) < Number(exp.quantity)
+            ) {
+              return true;
+            }
+            return false;
+          })
+          .map((exp) => {
+            const profileName = Array.isArray(exp.profiles)
+              ? exp.profiles[0]?.display_name
+              : exp.profiles?.display_name;
+            return {
+              id: exp.id,
+              expense_date: exp.expense_date,
+              item_name: exp.item_name,
+              quantity: Number(exp.quantity) || 0,
+              verified_quantity: exp.verified_quantity != null ? Number(exp.verified_quantity) : null,
+              delivery_status: exp.delivery_status || 'pending',
+              notes: exp.notes || null,
+              recorded_by_name: profileName || 'ስራ አስኪያጅ',
+              created_at: exp.created_at,
+            };
+          });
+      }
+    } else {
+      // No service role key: use SECURITY DEFINER RPC (bypasses RLS safely without exposing amount)
+      const { data: rpcDeliveries, error: rpcError } = await c.rpc('get_pending_cement_deliveries');
+      if (!rpcError && Array.isArray(rpcDeliveries)) {
+        pendingDeliveries = rpcDeliveries as PendingCementDelivery[];
+      }
+    }
+  } catch (err) {
+    console.warn('Could not load pending cement deliveries:', err);
+    pendingDeliveries = [];
+  }
 
   const cement = items?.find((i) => i.name === 'Cement 50kg');
   const cementQty = Number(cement?.stock_on_hand ?? 0);
@@ -123,7 +214,7 @@ export default async function StockPage() {
       </div>
 
       {/* Quick Actions */}
-      <StockActionsPanel cementOnHand={cementQty} />
+      <StockActionsPanel cementOnHand={cementQty} pendingDeliveries={pendingDeliveries} />
 
       {/* Stock Balance Table */}
       <div className="erp-card overflow-hidden">
