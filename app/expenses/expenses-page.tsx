@@ -13,7 +13,18 @@ import {
   Pencil,
   Trash2,
   X,
+  Calendar,
+  MessageSquareText,
 } from 'lucide-react';
+import {
+  ETHIOPIAN_MONTHS,
+  getTodayEthiopic,
+  gregorianToEthiopic,
+  ethiopicToGregorian,
+  formatEthiopicDate,
+  getDaysInEthMonth,
+  isSameEthMonth,
+} from '@/lib/ethiopian-calendar';
 
 export type ExpenseCategory = 'production_materials' | 'workshop_services' | 'other';
 
@@ -23,6 +34,9 @@ export interface ExpenseRecord {
   category: ExpenseCategory;
   item_name: string;
   amount: number;
+  quantity?: number | null;
+  delivery_status?: 'pending' | 'delivered' | 'not_applicable' | null;
+  verified_quantity?: number | null;
   notes: string | null;
   created_at: string;
   profiles?: { display_name: string | null } | { display_name: string | null }[] | null;
@@ -78,16 +92,20 @@ export default function ExpensesPage({
   searchParams: { error?: string; success?: string };
   tableMissing?: boolean;
 }) {
-  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Nairobi' }).format(new Date());
-  const thisMonthPrefix = today.substring(0, 7);
+  const todayEth = getTodayEthiopic();
 
   // Create Form State - 2 Sections only: 'production_materials' & 'workshop_services'
   const [category, setCategory] = useState<'production_materials' | 'workshop_services'>('production_materials');
   const [selectedPreset, setSelectedPreset] = useState<string>('ሲሚንቶ');
   const [customItemName, setCustomItemName] = useState<string>('');
+  const [cementQuantity, setCementQuantity] = useState<string>('');
   const [amount, setAmount] = useState<string>('');
-  const [expenseDate, setExpenseDate] = useState<string>(today);
   const [notes, setNotes] = useState<string>('');
+
+  // Ethiopian Date State for New Expense
+  const [ethYear, setEthYear] = useState<number>(todayEth.year);
+  const [ethMonth, setEthMonth] = useState<number>(todayEth.month);
+  const [ethDay, setEthDay] = useState<number>(todayEth.day);
 
   // List & Filter State
   const [searchQuery, setSearchQuery] = useState('');
@@ -99,6 +117,20 @@ export default function ExpensesPage({
   const [editingItem, setEditingItem] = useState<ExpenseRecord | null>(null);
   const [deletingItem, setDeletingItem] = useState<ExpenseRecord | null>(null);
 
+  // Ethiopian Date State for Edit Modal
+  const [editEthYear, setEditEthYear] = useState<number>(todayEth.year);
+  const [editEthMonth, setEditEthMonth] = useState<number>(todayEth.month);
+  const [editEthDay, setEditEthDay] = useState<number>(todayEth.day);
+
+  useEffect(() => {
+    if (editingItem) {
+      const eth = gregorianToEthiopic(editingItem.expense_date);
+      setEditEthYear(eth.year);
+      setEditEthMonth(eth.month);
+      setEditEthDay(eth.day);
+    }
+  }, [editingItem]);
+
   const amountInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -108,6 +140,24 @@ export default function ExpensesPage({
     el.addEventListener('wheel', preventWheel, { passive: false });
     return () => el.removeEventListener('wheel', preventWheel);
   }, []);
+
+  // Clamp days if month changes (e.g. Pagume has 5/6 days)
+  const maxDays = getDaysInEthMonth(ethYear, ethMonth);
+  useEffect(() => {
+    if (ethDay > maxDays) setEthDay(maxDays);
+  }, [maxDays, ethDay]);
+
+  const editMaxDays = getDaysInEthMonth(editEthYear, editEthMonth);
+  useEffect(() => {
+    if (editEthDay > editMaxDays) setEditEthDay(editMaxDays);
+  }, [editMaxDays, editEthDay]);
+
+  const handleSetToday = () => {
+    const t = getTodayEthiopic();
+    setEthYear(t.year);
+    setEthMonth(t.month);
+    setEthDay(t.day);
+  };
 
   const handleCategoryChange = (nextCategory: 'production_materials' | 'workshop_services') => {
     setCategory(nextCategory);
@@ -123,13 +173,13 @@ export default function ExpensesPage({
     }
   };
 
-  // Summary Stats
+  // Summary Stats based on Ethiopian Calendar
   const todayTotal = expenses
-    .filter((e) => e.expense_date === today)
+    .filter((e) => e.expense_date === todayEth.isoDate)
     .reduce((sum, e) => sum + Number(e.amount || 0), 0);
 
   const monthTotal = expenses
-    .filter((e) => e.expense_date.startsWith(thisMonthPrefix))
+    .filter((e) => isSameEthMonth(e.expense_date, todayEth.isoDate))
     .reduce((sum, e) => sum + Number(e.amount || 0), 0);
 
   // Filtered List
@@ -144,7 +194,8 @@ export default function ExpensesPage({
     const matchesSearch =
       !q ||
       e.item_name.toLowerCase().includes(q) ||
-      (e.notes && e.notes.toLowerCase().includes(q));
+      (e.notes && e.notes.toLowerCase().includes(q)) ||
+      formatEthiopicDate(e.expense_date).toLowerCase().includes(q);
     return matchesCat && matchesSearch;
   });
 
@@ -161,16 +212,18 @@ export default function ExpensesPage({
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">{description}</p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="bg-white border border-slate-200/80 rounded-2xl px-4 py-2.5 shadow-2xs">
+        <div className="grid grid-cols-2 sm:flex sm:items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
+          <div className="bg-white border border-slate-200/80 rounded-2xl px-3.5 sm:px-4 py-2.5 shadow-2xs">
             <span className="text-[11px] font-medium text-slate-400 block">የዛሬ ወጪ</span>
-            <span className="text-base font-black font-mono text-slate-900">
+            <span className="text-sm sm:text-base font-black font-mono text-slate-900">
               {formatCurrency(todayTotal)}
             </span>
           </div>
-          <div className="bg-white border border-slate-200/80 rounded-2xl px-4 py-2.5 shadow-2xs">
-            <span className="text-[11px] font-medium text-slate-400 block">የዚህ ወር ወጪ</span>
-            <span className="text-base font-black font-mono text-rose-600">
+          <div className="bg-white border border-slate-200/80 rounded-2xl px-3.5 sm:px-4 py-2.5 shadow-2xs">
+            <span className="text-[11px] font-medium text-slate-400 block">
+              የ{todayEth.monthName} ወር ወጪ
+            </span>
+            <span className="text-sm sm:text-base font-black font-mono text-rose-600">
               {formatCurrency(monthTotal)}
             </span>
           </div>
@@ -293,38 +346,119 @@ export default function ExpensesPage({
             )}
           </div>
 
-          {/* Amount & Date */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-600 block">መጠን (ብር)</label>
+          {/* Cement Bag Quantity Field (Shows only when 'ሲሚንቶ' is selected) */}
+          {category === 'production_materials' && selectedPreset === 'ሲሚንቶ' && (
+            <div className="space-y-1.5 p-3 rounded-xl bg-blue-50/70 border border-blue-200/80 animate-in fade-in">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-blue-950 flex items-center gap-1.5">
+                  <span>የተገዛው ሲሚንቶ ብዛት (ከረጢት)</span>
+                  <span className="text-rose-500">*</span>
+                </label>
+                <span className="text-[10px] text-blue-700 font-semibold">
+                  ለመጋዘን ቆጠራ የሚላክ
+                </span>
+              </div>
               <input
-                ref={amountInputRef}
-                name="amount"
+                name="quantity"
                 type="number"
-                min="0.01"
-                step="0.01"
+                min="1"
+                step="1"
                 required
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                onWheel={(e) => {
-                  e.currentTarget.blur();
-                  e.preventDefault();
-                }}
-                className="erp-input h-11 px-3 font-mono font-bold text-base text-slate-900 w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                placeholder="0.00"
+                value={cementQuantity}
+                onChange={(e) => setCementQuantity(e.target.value)}
+                placeholder="ለምሳሌ፦ 100"
+                className="erp-input h-11 px-3.5 text-sm font-mono font-bold text-slate-900 w-full bg-white"
               />
+              <p className="text-[11px] text-blue-700/80">
+                ማስታወሻ፦ ይህ የከረጢት ብዛት በመጋዘን ገጽ ላይ ለአድሚኑ በቆጠራ ማረጋገጫ ዝርዝር ውስጥ ይታያል።
+              </p>
+            </div>
+          )}
+
+          {/* Amount */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-600 block">መጠን (ብር)</label>
+            <input
+              ref={amountInputRef}
+              name="amount"
+              type="number"
+              min="0.01"
+              step="0.01"
+              required
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              onWheel={(e) => {
+                e.currentTarget.blur();
+                e.preventDefault();
+              }}
+              className="erp-input h-11 px-3 font-mono font-bold text-base text-slate-900 w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              placeholder="0.00"
+            />
+          </div>
+
+          {/* Ethiopian Date Selector */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold text-slate-600 flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                <span>ቀን (የኢትዮጵያ ዘመን አቆጣጠር)</span>
+              </label>
+              <button
+                type="button"
+                onClick={handleSetToday}
+                className="text-[11px] font-bold text-blue-600 hover:text-blue-800 transition-colors cursor-pointer"
+                title="ወደ ዛሬ ቀን መልስ"
+              >
+                ዛሬ
+              </button>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-600 block">ቀን</label>
-              <input
-                name="expense_date"
-                type="date"
-                value={expenseDate}
-                onChange={(e) => setExpenseDate(e.target.value)}
-                className="erp-input h-11 px-3 font-mono text-xs font-semibold text-slate-900 w-full"
-              />
+            <div className="grid grid-cols-12 gap-1.5">
+              <select
+                value={ethDay}
+                onChange={(e) => setEthDay(Number(e.target.value))}
+                className="col-span-3 erp-input h-11 px-2 font-mono font-bold text-xs text-slate-900 bg-slate-50 border border-slate-200 rounded-xl"
+              >
+                {Array.from({ length: maxDays }, (_, i) => i + 1).map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={ethMonth}
+                onChange={(e) => setEthMonth(Number(e.target.value))}
+                className="col-span-5 erp-input h-11 px-2 font-semibold text-xs text-slate-900 bg-slate-50 border border-slate-200 rounded-xl"
+              >
+                {ETHIOPIAN_MONTHS.map((m, idx) => (
+                  <option key={m} value={idx + 1}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={ethYear}
+                onChange={(e) => setEthYear(Number(e.target.value))}
+                className="col-span-4 erp-input h-11 px-2 font-mono font-bold text-xs text-slate-900 bg-slate-50 border border-slate-200 rounded-xl"
+              >
+                {[todayEth.year - 3, todayEth.year - 2, todayEth.year - 1, todayEth.year, todayEth.year + 1, todayEth.year + 2].map(
+                  (y) => (
+                    <option key={y} value={y}>
+                      {y} ዓ.ም
+                    </option>
+                  )
+                )}
+              </select>
             </div>
+
+            {/* Hidden ISO date for backend persistence */}
+            <input
+              type="hidden"
+              name="expense_date"
+              value={ethiopicToGregorian(ethYear, ethMonth, ethDay)}
+            />
           </div>
 
           {/* Optional Note */}
@@ -401,61 +535,170 @@ export default function ExpensesPage({
             ))}
           </div>
 
-          {/* Clean Rows */}
+          {/* Clean Structured Cards (Clear Hierarchy on Mobile & Desktop) */}
           {filteredExpenses.length > 0 ? (
-            <div className="divide-y divide-slate-100">
+            <div className="space-y-3">
               {pagedExpenses.map((exp) => {
                 const meta = CATEGORY_META[exp.category] || CATEGORY_META.other;
+                const orderedQty = exp.quantity != null ? Number(exp.quantity) : null;
+                const verifiedQty = exp.verified_quantity != null ? Number(exp.verified_quantity) : null;
+                const isShortage = orderedQty !== null && verifiedQty !== null && verifiedQty < orderedQty;
+                const isSurplus = orderedQty !== null && verifiedQty !== null && verifiedQty > orderedQty;
+                const missingQty = isShortage ? (orderedQty ?? 0) - (verifiedQty ?? 0) : 0;
+
+                // Separate manager's original notes from admin store audit notes ([ቆጠራ፦ ...] / [ተጨማሪ ቆጠራ፦ ...])
+                const rawNotes = exp.notes || '';
+                const auditMatches = rawNotes.match(/\[(?:ተጨማሪ\s+)?ቆጠራ፦[^\]]*\]/g) || [];
+                const cleanManagerNote = rawNotes
+                  .replace(/\[(?:ተጨማሪ\s+)?ቆጠራ፦[^\]]*\]/g, '')
+                  .replace(/(?:^\s*·\s*|\s*·\s*$)/g, '')
+                  .replace(/\s*·\s*·\s*/g, ' · ')
+                  .trim();
 
                 return (
                   <div
                     key={exp.id}
-                    className="py-3 first:pt-1 last:pb-1 flex items-center justify-between gap-3 group"
+                    className={`p-3.5 sm:p-4 rounded-2xl border bg-white shadow-2xs transition-all space-y-3 ${
+                      isShortage
+                        ? 'border-rose-300 bg-rose-50/20'
+                        : exp.delivery_status === 'pending'
+                        ? 'border-amber-200 bg-amber-50/15'
+                        : 'border-slate-200/90 hover:border-slate-300'
+                    }`}
                   >
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className={`w-2 h-2 rounded-full shrink-0 ${meta.dot}`} />
-                        <span className="font-bold text-sm text-slate-900 truncate">
-                          {exp.item_name}
+                    {/* 1. Card Header: Item + Category Badge on Left, Amount on Right */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-extrabold text-sm sm:text-base text-slate-900">
+                            {exp.item_name}
+                          </span>
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                              exp.category === 'production_materials'
+                                ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                : 'bg-amber-50 text-amber-700 border-amber-200'
+                            }`}
+                          >
+                            {meta.shortLabel}
+                          </span>
+                        </div>
+                        <p className="text-[11px] font-mono font-semibold text-slate-400">
+                          {formatEthiopicDate(exp.expense_date, { withYearSuffix: true })}
+                        </p>
+                      </div>
+
+                      <div className="text-right shrink-0 flex flex-col items-end gap-1.5">
+                        <span className="font-mono font-black text-sm sm:text-base text-slate-900">
+                          -{formatCurrency(exp.amount)}
                         </span>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setEditingItem(exp)}
+                            className="px-2 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-100 text-[11px] font-semibold flex items-center gap-1 cursor-pointer"
+                            title="አስተካክል"
+                          >
+                            <Pencil className="w-3 h-3" />
+                            <span className="hidden sm:inline">አስተካክል</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDeletingItem(exp)}
+                            className="p-1.5 rounded-lg bg-rose-50/60 border border-rose-200/80 text-rose-500 hover:bg-rose-100 cursor-pointer"
+                            title="ሰርዝ"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-0.5 pl-4">
-                        <span className="font-mono">{exp.expense_date}</span>
-                        <span>·</span>
-                        <span>{meta.shortLabel}</span>
-                        {exp.notes && (
-                          <>
-                            <span>·</span>
-                            <span className="truncate max-w-[180px] text-slate-500">{exp.notes}</span>
-                          </>
+                    </div>
+
+                    {/* 2. Structured Cement Delivery / Stock Breakdown (Only if quantity or delivery workflow exists) */}
+                    {(orderedQty !== null || exp.delivery_status) && (
+                      <div className="grid grid-cols-3 gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 text-center">
+                        <div>
+                          <span className="text-[10px] text-slate-400 font-semibold block">የተገዛ ብዛት</span>
+                          <span className="font-mono font-bold text-xs sm:text-sm text-slate-900">
+                            {orderedQty ?? '-'} <span className="text-[10px] font-normal text-slate-500">ከረጢት</span>
+                          </span>
+                        </div>
+
+                        <div className="border-x border-slate-200/80 px-1">
+                          <span className="text-[10px] text-slate-400 font-semibold block">መጋዘን የገባ</span>
+                          <span
+                            className={`font-mono font-bold text-xs sm:text-sm ${
+                              exp.delivery_status === 'pending'
+                                ? 'text-amber-600'
+                                : isShortage
+                                ? 'text-rose-700'
+                                : 'text-emerald-700'
+                            }`}
+                          >
+                            {exp.delivery_status === 'pending'
+                              ? 'በመጠባበቅ'
+                              : `${verifiedQty ?? orderedQty ?? 0} ከረጢት`}
+                          </span>
+                        </div>
+
+                        <div>
+                          <span className="text-[10px] text-slate-400 font-semibold block">ሁኔታ</span>
+                          {exp.delivery_status === 'pending' ? (
+                            <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 mt-0.5">
+                              ቆጠራ ይጠብቃል
+                            </span>
+                          ) : isShortage ? (
+                            <span className="inline-block text-[10px] font-black px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 mt-0.5">
+                              ⚠️ {missingQty} ጎድሏል
+                            </span>
+                          ) : isSurplus ? (
+                            <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 mt-0.5">
+                              +{(verifiedQty ?? 0) - (orderedQty ?? 0)} ትርፍ
+                            </span>
+                          ) : (
+                            <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 mt-0.5">
+                              ✓ ሙሉ ገብቷል
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 3. Manager Notes & Store Admin Audit Reason (Clearly Separated!) */}
+                    {(cleanManagerNote || auditMatches.length > 0) && (
+                      <div className="space-y-1.5">
+                        {cleanManagerNote && (
+                          <div className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-200/70 text-xs text-slate-600 flex items-start gap-2">
+                            <MessageSquareText className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                            <div className="min-w-0">
+                              <span className="font-bold text-slate-700 mr-1">ማስታወሻ፦</span>
+                              <span className="whitespace-normal break-words">{cleanManagerNote}</span>
+                            </div>
+                          </div>
                         )}
-                      </div>
-                    </div>
 
-                    <div className="flex items-center gap-2.5 shrink-0">
-                      <span className="font-mono font-bold text-sm text-slate-900">
-                        -{formatCurrency(exp.amount)}
-                      </span>
-
-                      <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => setEditingItem(exp)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer"
-                          title="አስተካክል"
-                        >
-                          <Pencil className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setDeletingItem(exp)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                          title="ሰርዝ"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        {auditMatches.map((auditNote, idx) => {
+                          const cleaned = auditNote.replace(/^\[|\]$/g, '');
+                          return (
+                            <div
+                              key={idx}
+                              className={`px-3 py-2 rounded-xl border text-xs flex items-start gap-2 ${
+                                isShortage
+                                  ? 'bg-rose-50 border-rose-200 text-rose-900'
+                                  : 'bg-emerald-50/70 border-emerald-200 text-emerald-900'
+                              }`}
+                            >
+                              <AlertCircle
+                                className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${
+                                  isShortage ? 'text-rose-600' : 'text-emerald-600'
+                                }`}
+                              />
+                              <span className="font-semibold whitespace-normal break-words">{cleaned}</span>
+                            </div>
+                          );
+                        })}
                       </div>
-                    </div>
+                    )}
                   </div>
                 );
               })}
@@ -547,28 +790,93 @@ export default function ExpensesPage({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-600 block">መጠን (ብር)</label>
+              {(editingItem.item_name.includes('ሲሚንቶ') || editingItem.quantity != null) && (
+                <div className="space-y-1 p-3 rounded-xl bg-blue-50/70 border border-blue-200/80">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-blue-950 block">
+                      የሲሚንቶ ብዛት (ከረጢት)
+                    </label>
+                    {editingItem.verified_quantity != null && (
+                      <span className="text-[10px] font-bold text-blue-700">
+                        መጋዘን የገባው፦ {editingItem.verified_quantity} ከረጢት
+                      </span>
+                    )}
+                  </div>
                   <input
-                    name="amount"
+                    name="quantity"
                     type="number"
-                    min="0.01"
-                    step="0.01"
-                    defaultValue={editingItem.amount}
+                    min="1"
+                    step="1"
+                    defaultValue={editingItem.quantity ?? ''}
                     required
-                    className="erp-input h-10 px-3 font-mono font-bold text-sm text-slate-900 w-full"
+                    className="erp-input h-10 px-3 font-mono font-bold text-sm text-slate-900 w-full bg-white"
                   />
                 </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-600 block">ቀን</label>
-                  <input
-                    name="expense_date"
-                    type="date"
-                    defaultValue={editingItem.expense_date}
-                    className="erp-input h-10 px-3 font-mono text-xs font-semibold text-slate-900 w-full"
-                  />
+              )}
+
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-slate-600 block">መጠን (ብር)</label>
+                <input
+                  name="amount"
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  defaultValue={editingItem.amount}
+                  required
+                  className="erp-input h-10 px-3 font-mono font-bold text-sm text-slate-900 w-full"
+                />
+              </div>
+
+              {/* Ethiopian Date Selector for Edit Modal */}
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-slate-600 flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                  <span>ቀን (የኢትዮጵያ ዘመን አቆጣጠር)</span>
+                </label>
+                <div className="grid grid-cols-12 gap-1.5">
+                  <select
+                    value={editEthDay}
+                    onChange={(e) => setEditEthDay(Number(e.target.value))}
+                    className="col-span-3 erp-input h-10 px-2 font-mono font-bold text-xs text-slate-900 bg-slate-50 border border-slate-200 rounded-xl"
+                  >
+                    {Array.from({ length: editMaxDays }, (_, i) => i + 1).map((d) => (
+                      <option key={d} value={d}>
+                        {d}
+                      </option>
+                    ))}
+                  </select>
+
+                  <select
+                    value={editEthMonth}
+                    onChange={(e) => setEditEthMonth(Number(e.target.value))}
+                    className="col-span-5 erp-input h-10 px-2 font-semibold text-xs text-slate-900 bg-slate-50 border border-slate-200 rounded-xl"
+                  >
+                    {ETHIOPIAN_MONTHS.map((m, idx) => (
+                      <option key={m} value={idx + 1}>
+                        {m}
+                      </option>
+                    ))}
+                  </select>
+
+                  <select
+                    value={editEthYear}
+                    onChange={(e) => setEditEthYear(Number(e.target.value))}
+                    className="col-span-4 erp-input h-10 px-2 font-mono font-bold text-xs text-slate-900 bg-slate-50 border border-slate-200 rounded-xl"
+                  >
+                    {[editEthYear - 3, editEthYear - 2, editEthYear - 1, editEthYear, editEthYear + 1, editEthYear + 2].map(
+                      (y) => (
+                        <option key={y} value={y}>
+                          {y} ዓ.ም
+                        </option>
+                      )
+                    )}
+                  </select>
                 </div>
+                <input
+                  type="hidden"
+                  name="expense_date"
+                  value={ethiopicToGregorian(editEthYear, editEthMonth, editEthDay)}
+                />
               </div>
 
               <div className="space-y-1">

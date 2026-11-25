@@ -36,11 +36,28 @@ export default async function OwnerExpensesPage({
   let expenses: ExpenseRecord[] = [];
   let tableMissing = false;
 
-  const { data, error } = await client
+  const columnsWithDelivery = 'id,expense_date,category,item_name,amount,quantity,delivery_status,verified_quantity,notes,created_at,profiles:recorded_by(display_name)';
+  const baseColumns = 'id,expense_date,category,item_name,amount,notes,created_at,profiles:recorded_by(display_name)';
+
+  let rawData: unknown[] | null = null;
+  const initialRes = await client
     .from('expenses')
-    .select('id,expense_date,category,item_name,amount,notes,created_at,profiles:recorded_by(display_name)')
+    .select(columnsWithDelivery)
     .order('expense_date', { ascending: false })
     .order('created_at', { ascending: false });
+
+  let error = initialRes.error;
+  if (!error) {
+    rawData = initialRes.data;
+  } else if (error.message?.includes('column') || error.code === '42703') {
+    const fallbackRes = await client
+      .from('expenses')
+      .select(baseColumns)
+      .order('expense_date', { ascending: false })
+      .order('created_at', { ascending: false });
+    rawData = fallbackRes.data;
+    error = fallbackRes.error;
+  }
 
   if (error) {
     if (error.message?.includes('does not exist') || error.code === '42P01') {
@@ -56,12 +73,12 @@ export default async function OwnerExpensesPage({
         if (res.error && (res.error.message?.includes('does not exist') || res.error.code === '42P01')) {
           tableMissing = true;
         } else {
-          expenses = (res.data as ExpenseRecord[]) || [];
+          expenses = (res.data as unknown as ExpenseRecord[]) || [];
         }
       }
     }
   } else {
-    expenses = (data as ExpenseRecord[]) || [];
+    expenses = (rawData as unknown as ExpenseRecord[]) || [];
   }
 
   return (
