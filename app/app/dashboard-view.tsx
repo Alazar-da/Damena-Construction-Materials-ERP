@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { formatEthiopicDateTime } from '@/lib/ethiopian-calendar';
 import {
   ArrowRight,
   ArrowUpRight,
@@ -181,7 +182,7 @@ export default function DashboardView({
                   </div>
                   <div className="shrink-0 text-right">
                     <p className={`text-lg font-bold tabular-nums ${isNegative ? 'text-rose-800' : 'text-emerald-800'}`}>{isNegative ? '−' : '+'}{Math.abs(Number(movement.quantity_delta)).toLocaleString('en-US')}</p>
-                    <time className="mt-1 block text-sm text-slate-600" dateTime={movement.created_at}>{new Date(movement.created_at).toLocaleString('am-ET', { timeZone: 'Africa/Nairobi', dateStyle: 'medium', timeStyle: 'short' })}</time>
+                    <time className="mt-1 block text-sm text-slate-600" dateTime={movement.created_at}>{formatEthiopicDateTime(movement.created_at)}</time>
                   </div>
                 </div>
               );

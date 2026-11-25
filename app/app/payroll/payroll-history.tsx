@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { History, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { formatEthiopicDate } from '@/lib/ethiopian-calendar';
 
 export type PayrollHistoryRecord = {
   id: string;
@@ -111,7 +112,7 @@ export default function PayrollHistory({
                   {money(r.amount)}
                 </td>
                 <td className="whitespace-nowrap px-4 py-4 text-slate-600">
-                  {r.period_start}
+                  {formatEthiopicDate(r.period_start, { withYearSuffix: true })}
                 </td>
               </tr>
             ))}

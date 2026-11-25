@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { saveProduction } from './actions';
 import { Plus, Minus, Check, History, X, ChevronLeft, ChevronRight, Factory } from 'lucide-react';
+import { formatEthiopicDate } from '@/lib/ethiopian-calendar';
 
 interface OutputProduct {
   id: string;
@@ -272,7 +273,7 @@ export default function ProductionDesk({
                           {displayProductName(productName)}
                         </div>
                         <div className="text-[10px] text-slate-400 font-mono">
-                          {r.production_date}
+                          {formatEthiopicDate(r.production_date, { withYearSuffix: true })}
                         </div>
                       </div>
                     </div>
@@ -380,7 +381,7 @@ export default function ProductionDesk({
                           {displayProductName(productName)}
                         </div>
                         <div className="text-[10px] text-slate-400 font-mono">
-                          {r.production_date}
+                          {formatEthiopicDate(r.production_date, { withYearSuffix: true })}
                         </div>
                       </div>
                     </div>

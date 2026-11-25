@@ -21,6 +21,8 @@ import {
   updateOwnerSale,
   updateOwnerService,
 } from '../record-actions';
+import { formatEthiopicDate } from '@/lib/ethiopian-calendar';
+import { EthiopianDatePicker } from '@/components/ethiopian-date-picker';
 
 type SaleLine = {
   id: string;
@@ -101,6 +103,13 @@ const relation = (value: Production['products']) =>
 const recordedBy = (value: Sale['profiles']) => {
   const profile = Array.isArray(value) ? value[0] : value;
   return profile?.display_name || 'ያልታወቀ ተጠቃሚ';
+};
+
+const serviceTypeLabels: Record<string, string> = {
+  battery_charging: 'ባትሪ ቻርጅ',
+  battery_acid: 'የባትሪ አሲድ መሙላት',
+  welding: 'ብየዳ',
+  door_window: 'በር እና መስኮት',
 };
 
 const localizeMovementReason = (reason: string) => ({
@@ -356,25 +365,17 @@ export default function OwnerRecords({
             const line = s.sale_lines?.[0];
             const itemName = line?.item_name_snapshot || 'የምርት ሽያጭ';
             const itemQty = line ? `${line.quantity} ${line.unit_snapshot || 'pcs'}` : '';
-            const due = Math.max(0, Number(s.total_amount) - Number(s.paid_amount));
-            const isPaid = due === 0;
 
             return (
               <RecordCard
                 key={s.id}
                 type="ሽያጭ"
                 title={itemName}
-                subtitle={`${itemQty ? `${itemQty} · ` : ''}${s.sale_date} · ${s.customer_name || 'በቀጥታ ሽያጭ'} · በ${recordedBy(s.profiles)} ተመዝግቧል`}
+                subtitle={`${itemQty ? `${itemQty} · ` : ''}${formatEthiopicDate(s.sale_date, { withYearSuffix: true })} · ${s.customer_name || 'በቀጥታ ሽያጭ'} · በ${recordedBy(s.profiles)} ተመዝግቧል`}
                 amount={money(Number(s.total_amount))}
                 statusBadge={
-                  <span
-                    className={`text-[10px] px-1.5 py-0.5 rounded-md font-semibold font-mono ${
-                      isPaid
-                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                        : 'bg-amber-50 text-amber-700 border border-amber-200'
-                    }`}
-                  >
-                    {isPaid ? 'ተከፍሏል' : `ያልተከፈለ፦ ${money(due)}`}
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-md font-semibold font-mono bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    ተከፍሏል
                   </span>
                 }
               >
@@ -382,12 +383,10 @@ export default function OwnerRecords({
                   <input type="hidden" name="id" value={s.id} />
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     <FieldLabel label="የሽያጭ ቀን">
-                      <input
-                        className={inputClass}
+                      <EthiopianDatePicker
                         name="sale_date"
-                        type="date"
                         defaultValue={s.sale_date}
-                        required
+                        compact
                       />
                     </FieldLabel>
 
@@ -478,8 +477,8 @@ export default function OwnerRecords({
             <RecordCard
               key={s.id}
               type="አገልግሎት"
-              title={s.service_type.replaceAll('_', ' ')}
-              subtitle={`${new Date(s.created_at).toLocaleDateString('en-KE')} · ${
+              title={serviceTypeLabels[s.service_type] || s.service_type.replaceAll('_', ' ')}
+              subtitle={`${formatEthiopicDate(s.created_at, { withYearSuffix: true })} · ${
                 s.customer_name || 'Walk-in'
               }`}
               amount={money(Number(s.amount))}
@@ -493,7 +492,10 @@ export default function OwnerRecords({
                       name="service_type"
                       defaultValue={s.service_type}
                     >
-                      <option value="battery_charging">ባትሪ መሙላት</option><option value="battery_acid">የባትሪ አሲድ መሙላት</option><option value="welding">ብየዳ</option>
+                      <option value="battery_charging">ባትሪ ቻርጅ</option>
+                      <option value="battery_acid">የባትሪ አሲድ መሙላት</option>
+                      <option value="welding">ብየዳ</option>
+                      <option value="door_window">በር እና መስኮት</option>
                     </select>
                   </FieldLabel>
 
@@ -542,7 +544,7 @@ export default function OwnerRecords({
               key={p.id}
               type="Payroll"
               title={p.worker_name || 'Worker'}
-              subtitle={`${p.period_start} · ${p.pay_type}`}
+              subtitle={`${formatEthiopicDate(p.period_start, { withYearSuffix: true })} · ${p.pay_type}`}
               amount={money(Number(p.amount))}
             >
               <form action={updateOwnerPayroll} className="space-y-3.5">
@@ -564,12 +566,10 @@ export default function OwnerRecords({
                   </FieldLabel>
 
                   <FieldLabel label="ቀን">
-                    <input
-                      className={inputClass}
+                    <EthiopianDatePicker
                       name="period_start"
-                      type="date"
                       defaultValue={p.period_start}
-                      required
+                      compact
                     />
                   </FieldLabel>
 
@@ -623,7 +623,7 @@ export default function OwnerRecords({
                 key={r.id}
                 type="Production"
                 title={product?.name || 'Production Output'}
-                subtitle={`${r.production_date}`}
+                subtitle={formatEthiopicDate(r.production_date, { withYearSuffix: true })}
                 amount={`+${Number(r.output_quantity).toLocaleString()} ${
                   product?.unit || 'units'
                 }`}
@@ -632,12 +632,10 @@ export default function OwnerRecords({
                   <input type="hidden" name="id" value={r.id} />
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     <FieldLabel label="የምርት ቀን">
-                      <input
-                        className={inputClass}
+                      <EthiopianDatePicker
                         name="production_date"
-                        type="date"
                         defaultValue={r.production_date}
-                        required
+                        compact
                       />
                     </FieldLabel>
 
@@ -681,7 +679,7 @@ export default function OwnerRecords({
                 key={m.id}
                 type={isReceipt ? 'Receipt' : 'Stock Issue'}
                 title={product?.name || 'Stock item'}
-                subtitle={`${new Date(m.created_at).toLocaleDateString('en-KE')} · ${localizeMovementReason(m.reason)}`}
+                subtitle={`${formatEthiopicDate(m.created_at, { withYearSuffix: true })} · ${localizeMovementReason(m.reason)}`}
                 amount={`${isReceipt ? '+' : '−'}${Math.abs(
                   Number(m.quantity_delta)
                 ).toLocaleString()} ${product?.unit || ''}`}

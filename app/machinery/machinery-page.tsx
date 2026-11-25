@@ -29,13 +29,11 @@ export type Machinery = {
   profiles: { display_name: string | null } | { display_name: string | null }[] | null;
 };
 
+import { formatEthiopicDate } from '@/lib/ethiopian-calendar';
+
 const formatDate = (iso: string) => {
   try {
-    return new Date(iso).toLocaleDateString('am-ET', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
+    return formatEthiopicDate(iso, { withYearSuffix: true });
   } catch {
     return iso.slice(0, 10);
   }

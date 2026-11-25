@@ -2,21 +2,13 @@ import { db } from '@/lib/supabase/server';
 import PayrollForm from './payroll-form';
 import PayrollHistory from './payroll-history';
 import { CalendarDays, Users, Wallet } from 'lucide-react';
+import { formatEthiopicDate, getTodayEthiopic, isSameEthMonth } from '@/lib/ethiopian-calendar';
 
 const money = (value: number) =>
   `${Number(value || 0).toLocaleString('en-KE', { maximumFractionDigits: 2 })} ብር`;
 
-const today = () =>
-  new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Nairobi' }).format(new Date());
-
 const formatDisplayDate = () =>
-  new Intl.DateTimeFormat('en-KE', {
-    timeZone: 'Africa/Nairobi',
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  }).format(new Date());
+  formatEthiopicDate(new Date(), { withWeekday: true, withYearSuffix: true });
 
 export default async function PayrollScreen() {
   const c = await db();
@@ -30,12 +22,11 @@ export default async function PayrollScreen() {
     .order('period_start', { ascending: false })
     .limit(100);
 
-  const date = today();
-  const month = date.slice(0, 7);
+  const date = getTodayEthiopic().isoDate;
 
   const paidRecords = (records ?? []).filter((r) => r.status === 'paid');
   const monthPaid = paidRecords
-    .filter((r) => String(r.period_start).startsWith(month))
+    .filter((r) => isSameEthMonth(String(r.period_start), date))
     .reduce((n, r) => n + Number(r.amount), 0);
   const todayPaid = paidRecords
     .filter((r) => String(r.period_start) === date)
@@ -79,7 +70,7 @@ export default async function PayrollScreen() {
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
           <div className="flex items-center gap-3"><span className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-50 text-violet-800"><Users className="h-5 w-5" aria-hidden="true" /></span><span className="text-base font-semibold text-slate-700">የዚህ ወር ክፍያዎች</span></div>
           <div className="mt-4 text-2xl font-extrabold text-blue-800 tabular-nums sm:text-3xl">
-            {paidRecords.filter((r) => String(r.period_start).startsWith(month)).length}
+            {paidRecords.filter((r) => isSameEthMonth(String(r.period_start), date)).length}
           </div>
         </div>
       </div>

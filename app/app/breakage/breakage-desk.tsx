@@ -13,6 +13,12 @@ import {
   History,
 } from 'lucide-react';
 import { recordBreakage, type BreakageState } from './actions';
+import {
+  formatEthiopicDate,
+  formatEthiopicTime,
+  getTodayEthiopic,
+  isSameEthMonth,
+} from '@/lib/ethiopian-calendar';
 
 export interface BreakageProduct {
   id: string;
@@ -113,16 +119,15 @@ export default function BreakageDesk({
     setQuantity(String(next));
   };
 
-  // Quick statistics
-  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Nairobi' }).format(new Date());
-  const thisMonthPrefix = today.substring(0, 7);
+  // Quick statistics (Ethiopian Calendar)
+  const today = getTodayEthiopic().isoDate;
 
   const todayBrokenCount = records
     .filter((r) => r.created_at.startsWith(today))
     .reduce((acc, r) => acc + Math.abs(Number(r.quantity_delta)), 0);
 
   const monthBrokenCount = records
-    .filter((r) => r.created_at.startsWith(thisMonthPrefix))
+    .filter((r) => isSameEthMonth(r.created_at, today))
     .reduce((acc, r) => acc + Math.abs(Number(r.quantity_delta)), 0);
 
   // Pagination
@@ -386,14 +391,8 @@ export default function BreakageDesk({
         <div className="space-y-2.5 sm:hidden">
           {pagedRecords.map((item) => {
             const product = relation(item.products);
-            const dateStr = new Date(item.created_at).toLocaleDateString('en-KE', {
-              timeZone: 'Africa/Nairobi',
-            });
-            const timeStr = new Date(item.created_at).toLocaleTimeString('en-KE', {
-              timeZone: 'Africa/Nairobi',
-              hour: '2-digit',
-              minute: '2-digit',
-            });
+            const dateStr = formatEthiopicDate(item.created_at);
+            const timeStr = formatEthiopicTime(item.created_at);
 
             return (
               <div
@@ -451,14 +450,8 @@ export default function BreakageDesk({
             <tbody className="divide-y divide-slate-100 font-sans">
               {pagedRecords.map((item) => {
                 const product = relation(item.products);
-                const dateStr = new Date(item.created_at).toLocaleDateString('en-KE', {
-                  timeZone: 'Africa/Nairobi',
-                });
-                const timeStr = new Date(item.created_at).toLocaleTimeString('en-KE', {
-                  timeZone: 'Africa/Nairobi',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                });
+                const dateStr = formatEthiopicDate(item.created_at, { withYearSuffix: true });
+                const timeStr = formatEthiopicTime(item.created_at);
 
                 return (
                   <tr key={item.id} className="hover:bg-slate-50/70 transition-colors">
