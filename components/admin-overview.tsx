@@ -12,8 +12,11 @@ import {
   Boxes,
   Users,
   ShieldCheck,
+  CheckCircle2,
 } from 'lucide-react';
 import { t } from '@/lib/i18n';
+import { getTodayEthiopic, ethiopicToGregorian } from '@/lib/ethiopian-calendar';
+import { resolveProductionAlert } from '@/app/actions/resolve-production-alert';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,15 +24,6 @@ type OverviewPeriod = 'today' | 'yesterday' | 'weekly' | 'monthly';
 
 const todayInNairobi = () =>
   new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Nairobi' }).format(new Date());
-
-const currentHourInNairobi = () => {
-  const str = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'Africa/Nairobi',
-    hour: 'numeric',
-    hour12: false,
-  }).format(new Date());
-  return parseInt(str, 10) || 12;
-};
 
 const addDays = (date: string, days: number) => {
   const value = new Date(`${date}T00:00:00Z`);
@@ -77,7 +71,7 @@ const CERT_CONFIGS: ProductCertConfig[] = [
 interface AdminOverviewProps {
   basePath: '/app' | '/owner' | '/manager';
   title?: string;
-  searchParams: Promise<{ period?: string }>;
+  searchParams: Promise<{ period?: string; alert_error?: string }>;
 }
 
 export default async function AdminOverview({
@@ -93,7 +87,6 @@ export default async function AdminOverview({
 
   const client = await db();
   const today = todayInNairobi();
-  const currentHour = currentHourInNairobi();
 
   let startDate = today;
   let endDate = today;
@@ -108,9 +101,10 @@ export default async function AdminOverview({
     endDate = today;
     periodLabel = 'ይህ ሳምንት';
   } else if (period === 'monthly') {
-    startDate = `${today.slice(0, 7)}-01`;
+    const todayEth = getTodayEthiopic();
+    startDate = ethiopicToGregorian(todayEth.year, todayEth.month, 1);
     endDate = today;
-    periodLabel = 'ይህ ወር';
+    periodLabel = `ይህ ወር (${todayEth.monthName})`;
   }
 
   const nextDate = addDays(endDate, 1);
@@ -178,19 +172,29 @@ export default async function AdminOverview({
   const totalPayrollExpenses = (payroll ?? []).reduce((sum, row) => sum + Number(row.amount), 0);
   const totalMoneyOut = totalPayrollExpenses;
 
-  // 2. PRODUCT CERTIFICATION ALGORITHM (DAILY SHIFTS & YIELD AUDIT)
+  // 2. PRODUCT CERTIFICATION ALGORITHM (COMPLETED DAYS ONLY — WAIT 1 FULL DAY BEFORE FLAGGING)
+  // Today's shifts may finish in the evening, so never flag today's production today;
+  // only audit completed days strictly before today (< today).
+  const todayStartIso = `${today}T00:00:00+03:00`;
+  const completedCementMovements = (cementMovements ?? []).filter(
+    (m) => m.created_at < todayStartIso
+  );
+  const completedProduction = (production ?? []).filter(
+    (r) => r.production_date < today
+  );
+
   const certifications = CERT_CONFIGS.map((config) => {
     const prod = (products ?? []).find((p) => p.name.includes(config.key));
     if (!prod) return null;
 
     const cementBags = Math.round(
-      (cementMovements ?? [])
+      completedCementMovements
         .filter((m) => m.reason && m.reason.includes(config.key))
         .reduce((sum, m) => sum + Math.abs(Number(m.quantity_delta)), 0)
     );
 
     const blocksProduced = Math.round(
-      (production ?? [])
+      completedProduction
         .filter((r) => r.output_product_id === prod.id)
         .reduce((sum, r) => sum + Number(r.output_quantity), 0)
     );
@@ -204,18 +208,11 @@ export default async function AdminOverview({
     const yieldPerBag = cementBags > 0 ? (blocksProduced / cementBags).toFixed(1) : '0';
     const shortfall = minExpected - blocksProduced;
 
-    const isToday = period === 'today';
-    const isDayOngoing = isToday && currentHour < 18;
-
-    let status: 'certified' | 'flagged' | 'in_progress' = 'certified';
+    let status: 'certified' | 'flagged' = 'certified';
     let statusLabel = 'ትክክል ✓';
     let explanation = '';
 
-    if (isDayOngoing && shortfall > 0) {
-      status = 'in_progress';
-      statusLabel = 'ፈረቃ በሂደት ላይ';
-      explanation = 'ሁለተኛው ፈረቃ አልተጠናቀቀም።';
-    } else if (shortfall >= config.threshold) {
+    if (shortfall >= config.threshold) {
       status = 'flagged';
       statusLabel = 'ጉድለት አለ! ⚠';
       explanation = `${shortfall} ብሎክ ጉድለት (ከ1 ከረጢት በላይ)። ይጣራ!`;
@@ -240,8 +237,28 @@ export default async function AdminOverview({
     };
   }).filter(Boolean);
 
+  const yesterdayDate = addDays(today, -1);
+  const alertPeriodKey =
+    period === 'yesterday'
+      ? startDate
+      : `${period}:${startDate}:${yesterdayDate}`;
+
+  let resolvedProductKeys = new Set<string>();
+  try {
+    const { data: resolutions, error: resErr } = await client
+      .from('production_alert_resolutions')
+      .select('period_key, product_key')
+      .or(`period_key.eq.${alertPeriodKey},and(period_key.gte.${startDate},period_key.lte.${yesterdayDate})`);
+    if (!resErr && resolutions) {
+      resolvedProductKeys = new Set(resolutions.map((r) => r.product_key));
+    }
+  } catch {
+    resolvedProductKeys = new Set<string>();
+  }
+
   const flaggedCertifications = certifications.filter(
-    (item): item is NonNullable<typeof item> => item !== null && item.status === 'flagged'
+    (item): item is NonNullable<typeof item> =>
+      item !== null && item.status === 'flagged' && !resolvedProductKeys.has(item.key)
   );
 
   const sortRank = (name: string) => {
@@ -414,6 +431,12 @@ export default async function AdminOverview({
       </div>
 
       {/* 3. PRODUCT CERTIFICATION ALERT (ONLY SHOWN IN RED WHEN FLAGGED) */}
+      {params.alert_error && (
+        <div className="rounded-2xl border border-rose-300 bg-rose-50 px-4 py-3 text-xs sm:text-sm font-bold text-rose-900">
+          ⚠️ {params.alert_error}
+        </div>
+      )}
+
       {flaggedCertifications.length > 0 && (
         <div className="bg-red-50 border-2 border-red-500 rounded-2xl p-4 sm:p-6 shadow-sm space-y-4">
           <div className="flex items-center justify-between border-b border-red-200 pb-3">
@@ -486,6 +509,29 @@ export default async function AdminOverview({
                     {item.explanation}
                   </div>
                 </div>
+
+                {(basePath === '/manager' || basePath === '/owner') && (
+                  <form
+                    action={resolveProductionAlert}
+                    className="pt-2 border-t border-red-100 flex items-center gap-1.5"
+                  >
+                    <input type="hidden" name="period_key" value={alertPeriodKey} />
+                    <input type="hidden" name="product_key" value={item.key} />
+                    <input type="hidden" name="return_to" value={`${basePath}?period=${period}`} />
+                    <input
+                      name="resolution_note"
+                      placeholder="ማብራሪያ (አማራጭ)..."
+                      className="flex-1 min-w-0 px-2.5 py-1.5 text-[11px] rounded-lg border border-red-200 bg-red-50/40 focus:bg-white focus:outline-none focus:border-red-400"
+                    />
+                    <button
+                      type="submit"
+                      className="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-bold flex items-center gap-1 shrink-0 cursor-pointer"
+                    >
+                      <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                      <span>ተጣርቷል (አንሳ)</span>
+                    </button>
+                  </form>
+                )}
               </div>
             ))}
           </div>
