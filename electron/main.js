@@ -47,6 +47,9 @@ function createMainWindow() {
 
   // Handle navigation & external links safely
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url === 'about:blank' || url.startsWith('blob:')) {
+      return { action: 'allow' };
+    }
     // If external link, open in default system browser
     if (!url.startsWith('https://damena-construction-materials-erp.vercel.app') && !url.startsWith('http://localhost:3000')) {
       shell.openExternal(url);
