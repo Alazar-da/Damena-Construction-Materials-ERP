@@ -18,6 +18,7 @@ import {
   Layers,
   Wallet,
   CheckCircle2,
+  X,
 } from 'lucide-react';
 import { formatEthiopicDate } from '@/lib/ethiopian-calendar';
 import { EthiopianDatePicker } from '@/components/ethiopian-date-picker';
@@ -454,30 +455,30 @@ export default function ReportsView({
       {/* =========================================================================
           HEADER ROW & RESPONSIVE PERIOD SELECTOR
       ========================================================================= */}
-      <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200/90 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-            <span className="text-[11px] sm:text-xs font-mono text-slate-500 uppercase font-bold tracking-wider">
-              የተጣራ የሂሳብ መረጃ
-            </span>
+      <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200/90 shadow-2xs space-y-4">
+        {/* Top Row: Title + Date on Left, Master Export Buttons on Right */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+              <span className="text-[11px] sm:text-xs font-mono text-slate-500 uppercase font-bold tracking-wider">
+                የተጣራ የሂሳብ መረጃ
+              </span>
+            </div>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 tracking-tight font-sans">
+              የፋይናንስ እና የስራ ሪፖርቶች
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 mt-0.5 flex items-center gap-1.5 font-mono">
+              <CalendarDays className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <span>ከ {formatEthiopicDate(from, { withYearSuffix: true })} እስከ {formatEthiopicDate(to, { withYearSuffix: true })}</span>
+            </p>
           </div>
-          <h1 className="text-xl sm:text-3xl font-black text-slate-900 tracking-tight font-sans">
-            የፋይናንስ እና የስራ ሪፖርቶች
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5 flex items-center gap-1.5 font-mono">
-            <CalendarDays className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-            <span>ከ {formatEthiopicDate(from, { withYearSuffix: true })} እስከ {formatEthiopicDate(to, { withYearSuffix: true })}</span>
-          </p>
-        </div>
 
-        {/* Action Buttons & Responsive Segmented Period Control */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full md:w-auto">
           <div className="grid grid-cols-2 sm:flex items-center gap-2 shrink-0">
             <button
               type="button"
               onClick={() => handleExportPrint('all')}
-              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 sm:py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl sm:rounded-2xl text-xs font-bold shadow-xs hover:shadow transition-all cursor-pointer"
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl sm:rounded-2xl text-xs font-bold shadow-xs hover:shadow transition-all cursor-pointer whitespace-nowrap"
             >
               <Printer className="w-3.5 h-3.5 text-slate-300" />
               <span>ሁሉንም አትም</span>
@@ -485,44 +486,45 @@ export default function ReportsView({
             <button
               type="button"
               onClick={() => handleExportCsv('all')}
-              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 sm:py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl sm:rounded-2xl text-xs font-bold shadow-xs hover:shadow transition-all cursor-pointer"
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl sm:rounded-2xl text-xs font-bold shadow-xs hover:shadow transition-all cursor-pointer whitespace-nowrap"
             >
               <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-100" />
               <span>ሁሉንም ኤክሴል</span>
             </button>
           </div>
-
-          <nav
-            aria-label="Period selector"
-            className="grid grid-cols-3 sm:grid-cols-6 w-full sm:w-auto bg-slate-100 p-1 sm:p-1.5 rounded-xl sm:rounded-2xl border border-slate-200/80 gap-1 shrink-0"
-          >
-            {[
-              { id: 'daily', mobileLabel: 'ዛሬ', fullLabel: 'ዛሬ' },
-              { id: 'weekly', mobileLabel: '7 ቀን', fullLabel: '7 ቀናት' },
-              { id: 'monthly', mobileLabel: 'ይህ ወር', fullLabel: 'ይህ ወር' },
-              { id: 'half_year', mobileLabel: '6 ወር', fullLabel: '6 ወር' },
-              { id: 'year', mobileLabel: '1 ዓመት', fullLabel: '1 ዓመት' },
-              { id: 'custom', mobileLabel: 'ብጁ', fullLabel: 'ብጁ ቀን' },
-            ].map((item) => {
-              const isSelected = mode === item.id || (item.id === 'custom' && customOpen);
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => applyPeriod(item.id)}
-                  className={`text-center py-2 px-1 sm:px-4 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
-                    isSelected
-                      ? 'bg-slate-900 text-white shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
-                  }`}
-                >
-                  <span className="sm:hidden">{item.mobileLabel}</span>
-                  <span className="hidden sm:inline">{item.fullLabel}</span>
-                </button>
-              );
-            })}
-          </nav>
         </div>
+
+        {/* Bottom Row: Full-Width Clean Segmented Period Control (Never Clips!) */}
+        <nav
+          aria-label="Period selector"
+          className="grid grid-cols-3 sm:grid-cols-6 w-full bg-slate-100 p-1 sm:p-1.5 rounded-xl sm:rounded-2xl border border-slate-200/80 gap-1"
+        >
+          {[
+            { id: 'daily', mobileLabel: 'ዛሬ', fullLabel: 'ዛሬ' },
+            { id: 'weekly', mobileLabel: '7 ቀን', fullLabel: '7 ቀናት' },
+            { id: 'monthly', mobileLabel: 'ይህ ወር', fullLabel: 'ይህ ወር' },
+            { id: 'half_year', mobileLabel: '6 ወር', fullLabel: '6 ወር' },
+            { id: 'year', mobileLabel: '1 ዓመት', fullLabel: '1 ዓመት' },
+            { id: 'custom', mobileLabel: 'ብጁ', fullLabel: 'ብጁ ቀን' },
+          ].map((item) => {
+            const isSelected = mode === item.id || (item.id === 'custom' && customOpen);
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => applyPeriod(item.id)}
+                className={`text-center py-2 px-2 sm:px-3 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${
+                  isSelected
+                    ? 'bg-slate-900 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                }`}
+              >
+                <span className="sm:hidden">{item.mobileLabel}</span>
+                <span className="hidden sm:inline">{item.fullLabel}</span>
+              </button>
+            );
+          })}
+        </nav>
       </div>
 
       {/* Custom Date Form (Shown when custom is selected) */}
@@ -549,13 +551,24 @@ export default function ReportsView({
               className="flex-1"
             />
           </div>
-          <button
-            type="submit"
-            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer shrink-0 shadow-2xs"
-          >
-            <CalendarDays className="w-3.5 h-3.5" />
-            <span>ሪፖርት አውጣ</span>
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="submit"
+              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-2xs"
+            >
+              <CalendarDays className="w-3.5 h-3.5" />
+              <span>ሪፖርት አውጣ</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => applyPeriod('monthly')}
+              className="p-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+              title="ዝጋ እና ወደ ወር ተመለስ"
+              aria-label="Close date filter and return to monthly"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </form>
       )}
 
