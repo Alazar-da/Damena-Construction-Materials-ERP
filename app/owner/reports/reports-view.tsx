@@ -13,7 +13,21 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   PackageMinus,
+  Printer,
+  FileSpreadsheet,
+  Layers,
+  Wallet,
+  CheckCircle2,
 } from 'lucide-react';
+import { formatEthiopicDate } from '@/lib/ethiopian-calendar';
+import { EthiopianDatePicker } from '@/components/ethiopian-date-picker';
+import { resolveProductionAlert } from '@/app/actions/resolve-production-alert';
+import {
+  exportReportToPrint,
+  ReportExportType,
+  ReportExportData,
+} from '@/lib/report-exporter';
+import { exportReportToExcel } from '@/lib/excel-exporter';
 
 type Sale = {
   id: string;
@@ -94,6 +108,16 @@ export type BreakageReportItem = {
   }[] | null;
 };
 
+export type ExpenseReportItem = {
+  id: string;
+  expense_date: string;
+  category: string;
+  item_name: string;
+  amount: number;
+  notes: string | null;
+  profiles?: { display_name: string | null } | { display_name: string | null }[] | null;
+};
+
 interface ReportsViewProps {
   basePath?: string;
   mode: string;
@@ -103,8 +127,10 @@ interface ReportsViewProps {
   services: Service[];
   payroll: Payroll[];
   production: Production[];
+  products?: { id: string; name: string }[];
   audit: AuditEntry[];
   breakages?: BreakageReportItem[];
+  expenses?: ExpenseReportItem[];
   cementYieldChecks: {
     date: string;
     productName: string;
@@ -167,12 +193,14 @@ export default function ReportsView({
   services,
   payroll,
   production,
+  products = [],
   audit,
   breakages = [],
+  expenses = [],
   cementYieldChecks,
 }: ReportsViewProps) {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'daily' | 'sales' | 'breakage' | 'audit'>('daily');
+  const [activeTab, setActiveTab] = useState<'daily' | 'sales' | 'breakage' | 'payroll' | 'audit'>('daily');
   const [customOpen, setCustomOpen] = useState(mode === 'custom');
   const [fromDate, setFromDate] = useState(from);
   const [toDate, setToDate] = useState(to);
@@ -181,16 +209,20 @@ export default function ReportsView({
   const collections = sales.reduce((n, s) => n + Number(s.paid_amount), 0);
   const serviceIncome = services.reduce((n, s) => n + Number(s.amount), 0);
   const payrollPaid = payroll.reduce((n, p) => n + Number(p.amount), 0);
+  const expensesPaid = expenses.reduce((n, e) => n + Number(e.amount), 0);
+  const totalInflow = collections + serviceIncome;
+  const totalOutflow = payrollPaid + expensesPaid;
+  const netProfit = totalInflow - totalOutflow;
 
   const totalBrokenPieces = breakages.reduce((n, b) => n + Math.abs(Number(b.quantity_delta)), 0);
 
   // Daily map
   const byDay = new Map<
     string,
-    { sales: number; services: number; payroll: number; production: number; breakage: number }
+    { sales: number; services: number; payroll: number; expenses: number; production: number; breakage: number }
   >();
   const daily = (date: string) => {
-    if (!byDay.has(date)) byDay.set(date, { sales: 0, services: 0, payroll: 0, production: 0, breakage: 0 });
+    if (!byDay.has(date)) byDay.set(date, { sales: 0, services: 0, payroll: 0, expenses: 0, production: 0, breakage: 0 });
     return byDay.get(date)!;
   };
 
@@ -202,6 +234,7 @@ export default function ReportsView({
     daily(d).services += Number(s.amount);
   });
   payroll.forEach((p) => (daily(p.period_start).payroll += Number(p.amount)));
+  expenses.forEach((e) => (daily(e.expense_date).expenses += Number(e.amount)));
   production.forEach((p) => (daily(p.production_date).production += Number(p.output_quantity)));
   breakages.forEach((b) => {
     const d = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Nairobi' }).format(
@@ -210,13 +243,37 @@ export default function ReportsView({
     daily(d).breakage += Math.abs(Number(b.quantity_delta));
   });
 
+  const exportData: ReportExportData = {
+    from,
+    to,
+    sales,
+    services,
+    expenses,
+    payroll,
+    production,
+    products,
+    breakages,
+    cementYieldChecks,
+  };
+
+  const handleExportCsv = (type: ReportExportType = 'all') => {
+    void exportReportToExcel(type, exportData);
+  };
+
+  const handleExportPrint = (type: ReportExportType = 'all') => {
+    exportReportToPrint(type, exportData);
+  };
+
   const dailyRows = [...byDay.entries()].sort((a, b) => b[0].localeCompare(a[0]));
 
   const PAGE_SIZE = 10;
   const [dailyPage, setDailyPage] = useState(1);
   const [salesPage, setSalesPage] = useState(1);
+  const [servicePage, setServicePage] = useState(1);
   const [auditPage, setAuditPage] = useState(1);
+  const [productionPage, setProductionPage] = useState(1);
   const [breakagePage, setBreakagePage] = useState(1);
+  const [payrollPage, setPayrollPage] = useState(1);
 
   const totalDailyPages = Math.max(1, Math.ceil(dailyRows.length / PAGE_SIZE));
   const pagedDailyRows = dailyRows.slice((dailyPage - 1) * PAGE_SIZE, dailyPage * PAGE_SIZE);
@@ -224,11 +281,20 @@ export default function ReportsView({
   const totalSalesPages = Math.max(1, Math.ceil(sales.length / PAGE_SIZE));
   const pagedSales = sales.slice((salesPage - 1) * PAGE_SIZE, salesPage * PAGE_SIZE);
 
+  const totalServicePages = Math.max(1, Math.ceil(services.length / PAGE_SIZE));
+  const pagedServices = services.slice((servicePage - 1) * PAGE_SIZE, servicePage * PAGE_SIZE);
+
   const totalAuditPages = Math.max(1, Math.ceil(audit.length / PAGE_SIZE));
   const pagedAudit = audit.slice((auditPage - 1) * PAGE_SIZE, auditPage * PAGE_SIZE);
 
+  const totalProductionPages = Math.max(1, Math.ceil(production.length / PAGE_SIZE));
+  const pagedProduction = production.slice((productionPage - 1) * PAGE_SIZE, productionPage * PAGE_SIZE);
+
   const totalBreakagePages = Math.max(1, Math.ceil(breakages.length / PAGE_SIZE));
   const pagedBreakages = breakages.slice((breakagePage - 1) * PAGE_SIZE, breakagePage * PAGE_SIZE);
+
+  const totalPayrollPages = Math.max(1, Math.ceil(payroll.length / PAGE_SIZE));
+  const pagedPayroll = payroll.slice((payrollPage - 1) * PAGE_SIZE, payrollPage * PAGE_SIZE);
 
   const applyPeriod = (newMode: string) => {
     if (newMode === 'custom') {
@@ -283,7 +349,7 @@ export default function ReportsView({
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-black text-xs text-slate-900">{check.productName}</span>
-                    <span className="text-[10px] font-mono text-slate-400">{check.date}</span>
+                    <span className="text-[10px] font-mono text-slate-400">{formatEthiopicDate(check.date)}</span>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-xs bg-red-50/60 p-2 rounded-lg font-mono">
                     <div>
@@ -298,6 +364,25 @@ export default function ReportsView({
                   <div className="p-2 rounded-lg bg-red-600 text-white text-[11px] font-bold">
                     ⚠ {check.explanation}
                   </div>
+                  {(basePath === '/manager/reports' || basePath === '/owner/reports') && (
+                    <form action={resolveProductionAlert} className="flex items-center gap-1.5 pt-1">
+                      <input type="hidden" name="period_key" value={check.date} />
+                      <input type="hidden" name="product_key" value={check.productKey} />
+                      <input type="hidden" name="return_to" value={`${basePath}?period=${mode}`} />
+                      <input
+                        name="resolution_note"
+                        placeholder="ማብራሪያ (አማራጭ)..."
+                        className="flex-1 min-w-0 px-2 py-1 text-[11px] rounded-lg border border-red-200 bg-red-50/40"
+                      />
+                      <button
+                        type="submit"
+                        className="px-2.5 py-1 rounded-lg bg-slate-900 text-white text-[10px] font-bold flex items-center gap-1 shrink-0 cursor-pointer"
+                      >
+                        <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                        <span>ተጣርቷል (አንሳ)</span>
+                      </button>
+                    </form>
+                  )}
                 </div>
               ))}
           </div>
@@ -313,6 +398,9 @@ export default function ReportsView({
                   <th className="px-3 py-2">የቀኑ ምርት</th>
                   <th className="px-3 py-2">የሚጠበቀው</th>
                   <th className="px-3 py-2">ሁኔታ</th>
+                  {(basePath === '/manager/reports' || basePath === '/owner/reports') && (
+                    <th className="px-3 py-2 text-right">እርምጃ</th>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-red-200/60 bg-white rounded-xl">
@@ -320,7 +408,7 @@ export default function ReportsView({
                   .filter((c) => c.flagged)
                   .map((check, idx) => (
                     <tr key={`${check.date}-${check.productKey}-${idx}`} className="bg-red-50/70 font-semibold">
-                      <td className="px-3 py-2.5 font-mono text-slate-900">{check.date}</td>
+                      <td className="px-3 py-2.5 font-mono text-slate-900">{formatEthiopicDate(check.date)}</td>
                       <td className="px-3 py-2.5 font-bold text-slate-900">{check.productName}</td>
                       <td className="px-3 py-2.5 font-mono">{check.cement} ከረጢት</td>
                       <td className="px-3 py-2.5 font-mono font-black text-red-600">
@@ -334,6 +422,27 @@ export default function ReportsView({
                           ⚠ {check.explanation}
                         </span>
                       </td>
+                      {(basePath === '/manager/reports' || basePath === '/owner/reports') && (
+                        <td className="px-3 py-2.5 text-right">
+                          <form action={resolveProductionAlert} className="inline-flex items-center gap-1.5">
+                            <input type="hidden" name="period_key" value={check.date} />
+                            <input type="hidden" name="product_key" value={check.productKey} />
+                            <input type="hidden" name="return_to" value={`${basePath}?period=${mode}`} />
+                            <input
+                              name="resolution_note"
+                              placeholder="ማብራሪያ..."
+                              className="w-28 px-2 py-1 text-[11px] rounded-lg border border-red-200 bg-white"
+                            />
+                            <button
+                              type="submit"
+                              className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-bold inline-flex items-center gap-1 cursor-pointer"
+                            >
+                              <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                              <span>ተጣርቷል (አንሳ)</span>
+                            </button>
+                          </form>
+                        </td>
+                      )}
                     </tr>
                   ))}
               </tbody>
@@ -358,21 +467,42 @@ export default function ReportsView({
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5 flex items-center gap-1.5 font-mono">
             <CalendarDays className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-            <span>ከ {from} እስከ {to}</span>
+            <span>ከ {formatEthiopicDate(from, { withYearSuffix: true })} እስከ {formatEthiopicDate(to, { withYearSuffix: true })}</span>
           </p>
         </div>
 
-        {/* Responsive Segmented Period Control */}
-        <div className="w-full md:w-auto">
+        {/* Action Buttons & Responsive Segmented Period Control */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full md:w-auto">
+          <div className="grid grid-cols-2 sm:flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => handleExportPrint('all')}
+              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 sm:py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl sm:rounded-2xl text-xs font-bold shadow-xs hover:shadow transition-all cursor-pointer"
+            >
+              <Printer className="w-3.5 h-3.5 text-slate-300" />
+              <span>ሁሉንም አትም</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleExportCsv('all')}
+              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 sm:py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl sm:rounded-2xl text-xs font-bold shadow-xs hover:shadow transition-all cursor-pointer"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-100" />
+              <span>ሁሉንም ኤክሴል</span>
+            </button>
+          </div>
+
           <nav
             aria-label="Period selector"
-            className="grid grid-cols-4 w-full md:w-auto bg-slate-100 p-1 sm:p-1.5 rounded-xl sm:rounded-2xl border border-slate-200/80 gap-1 shrink-0"
+            className="grid grid-cols-3 sm:grid-cols-6 w-full sm:w-auto bg-slate-100 p-1 sm:p-1.5 rounded-xl sm:rounded-2xl border border-slate-200/80 gap-1 shrink-0"
           >
             {[
               { id: 'daily', mobileLabel: 'ዛሬ', fullLabel: 'ዛሬ' },
-              { id: 'weekly', mobileLabel: '7 ቀናት', fullLabel: 'ያለፉት 7 ቀናት' },
+              { id: 'weekly', mobileLabel: '7 ቀን', fullLabel: '7 ቀናት' },
               { id: 'monthly', mobileLabel: 'ይህ ወር', fullLabel: 'ይህ ወር' },
-              { id: 'custom', mobileLabel: 'ብጁ ቀን', fullLabel: 'ብጁ የቀን ክልል' },
+              { id: 'half_year', mobileLabel: '6 ወር', fullLabel: '6 ወር' },
+              { id: 'year', mobileLabel: '1 ዓመት', fullLabel: '1 ዓመት' },
+              { id: 'custom', mobileLabel: 'ብጁ', fullLabel: 'ብጁ ቀን' },
             ].map((item) => {
               const isSelected = mode === item.id || (item.id === 'custom' && customOpen);
               return (
@@ -399,26 +529,24 @@ export default function ReportsView({
       {customOpen && (
         <form
           onSubmit={submitCustomRange}
-          className="p-3.5 sm:p-4 bg-white border border-slate-200 rounded-2xl shadow-2xs flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 animate-in fade-in"
+          className="p-3.5 sm:p-4 bg-white border border-slate-200 rounded-2xl shadow-2xs flex flex-col sm:flex-row items-stretch sm:items-center gap-3 animate-in fade-in"
         >
           <div className="flex items-center gap-2 flex-1">
             <label className="text-xs font-bold text-slate-600 shrink-0">ከ:</label>
-            <input
-              type="date"
+            <EthiopianDatePicker
               value={fromDate}
-              onChange={(e) => setFromDate(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono text-slate-900 focus:outline-none focus:border-slate-900"
-              required
+              onChange={(iso) => setFromDate(iso)}
+              compact
+              className="flex-1"
             />
           </div>
           <div className="flex items-center gap-2 flex-1">
             <label className="text-xs font-bold text-slate-600 shrink-0">እስከ:</label>
-            <input
-              type="date"
+            <EthiopianDatePicker
               value={toDate}
-              onChange={(e) => setToDate(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono text-slate-900 focus:outline-none focus:border-slate-900"
-              required
+              onChange={(iso) => setToDate(iso)}
+              compact
+              className="flex-1"
             />
           </div>
           <button
@@ -449,7 +577,7 @@ export default function ReportsView({
                 </span>
               </div>
               <div className="text-base xs:text-lg font-black font-mono text-emerald-600 tracking-tight leading-none">
-                +{money(collections + serviceIncome)}
+                +{money(totalInflow)}
               </div>
             </div>
             <div className="pt-2 mt-2 border-t border-emerald-100/80 text-[10px] font-mono text-slate-500 space-y-0.5">
@@ -470,12 +598,15 @@ export default function ReportsView({
                 </span>
               </div>
               <div className="text-base xs:text-lg font-black font-mono text-rose-600 tracking-tight leading-none">
-                -{money(payrollPaid)}
+                -{money(totalOutflow)}
               </div>
             </div>
             <div className="pt-2 mt-2 border-t border-rose-100/80 text-[10px] font-mono text-slate-500 space-y-0.5">
               <div className="truncate">ደመወዝ: <span className="font-semibold text-slate-700">{money(payrollPaid)}</span></div>
-              <div className="truncate">ክፍያዎች: <span className="font-semibold text-slate-700">{payroll.length} ሰራተኞች</span></div>
+              <div className="truncate">ዕቃዎች/ሌላ: <span className="font-semibold text-slate-700">{money(expensesPaid)}</span></div>
+              <div className="truncate font-bold">
+                ትርፍ: <span className={netProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}>{money(netProfit)}</span>
+              </div>
               {totalBrokenPieces > 0 && (
                 <div className="truncate text-amber-600 font-bold">
                   ስብርባሪ፦ {totalBrokenPieces} ፍሬ
@@ -498,7 +629,7 @@ export default function ReportsView({
             </div>
             <div className="my-3">
               <div className="text-3xl sm:text-4xl font-black font-mono text-emerald-600 tracking-tight">
-                +{money(collections + serviceIncome)}
+                +{money(totalInflow)}
               </div>
               <p className="text-xs text-slate-500 mt-1">የምርት ሽያጭ እና የአገልግሎት ገቢዎች</p>
             </div>
@@ -511,7 +642,7 @@ export default function ReportsView({
           <div className="rounded-2xl sm:rounded-3xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xs flex flex-col justify-between">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                የወጣ ወጪ
+                የወጣ ወጪ (ጠቅላላ)
               </span>
               <div className="w-9 h-9 rounded-xl bg-rose-50 text-rose-700 flex items-center justify-center font-bold">
                 <ArrowUpRight className="w-5 h-5" />
@@ -519,13 +650,16 @@ export default function ReportsView({
             </div>
             <div className="my-3">
               <div className="text-3xl sm:text-4xl font-black font-mono text-rose-600 tracking-tight">
-                -{money(payrollPaid)}
+                -{money(totalOutflow)}
               </div>
-              <p className="text-xs text-slate-500 mt-1">የቀን ሰራተኞች ደመወዝ እና የስራ ወጪዎች</p>
+              <p className="text-xs text-slate-500 mt-1">የቀን ሰራተኞች ደመወዝ፣ የጥሬ ዕቃዎች ግዢ እና ሌሎች ወጪዎች</p>
             </div>
             <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
-              <span>የደመወዝ ወጪ: {money(payrollPaid)}</span>
-              <span>የተከፈሉ መዝገቦች: {payroll.length}</span>
+              <span>ደመወዝ: {money(payrollPaid)}</span>
+              <span>ዕቃዎች: {money(expensesPaid)}</span>
+              <span className={`font-bold ${netProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                የተጣራ ትርፍ: {money(netProfit)}
+              </span>
               {totalBrokenPieces > 0 && (
                 <span className="text-amber-600 font-bold">
                   ስብርባሪ፦ {totalBrokenPieces} ፍሬ
@@ -544,8 +678,9 @@ export default function ReportsView({
         <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
           {[
             { id: 'daily', label: 'ዕለታዊ እንቅስቃሴ', count: dailyRows.length, icon: ChartNoAxesCombined },
-            { id: 'sales', label: 'የሽያጭ ደረሰኞች', count: sales.length, icon: Receipt },
-            { id: 'breakage', label: 'የተሰበሩ እቃዎች', count: breakages.length, icon: PackageMinus },
+            { id: 'sales', label: 'የሽያጭ ደረሰኞች', count: sales.length + services.length, icon: Receipt },
+            { id: 'breakage', label: 'ምርት', count: production.length + breakages.length, icon: Layers },
+            { id: 'payroll', label: 'ደመወዝ', count: payroll.length, icon: Wallet },
             { id: 'audit', label: 'የለውጥ ታሪክ', count: audit.length, icon: Activity },
           ].map((tab) => {
             const isActive = activeTab === tab.id;
@@ -580,17 +715,46 @@ export default function ReportsView({
         ========================================================================= */}
         {activeTab === 'daily' && (
           <div className="space-y-3">
+            {/* Quick Export Bar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-white border border-slate-200/80 rounded-2xl shadow-2xs">
+              <span className="text-xs font-bold text-slate-600">
+                ዕለታዊ የገቢና ወጪ ካሽፍሎው እንቅስቃሴ
+              </span>
+              <div className="flex items-center gap-1.5 self-end sm:self-auto">
+                <button
+                  type="button"
+                  onClick={() => handleExportPrint('daily')}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-[11px] font-bold text-slate-700 shadow-2xs transition-colors cursor-pointer"
+                >
+                  <Printer className="w-3.5 h-3.5 text-slate-500" />
+                  <span>ዕለታዊ አትም</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleExportCsv('daily')}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-[11px] font-bold text-emerald-800 shadow-2xs transition-colors cursor-pointer"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>ዕለታዊ ኤክሴል</span>
+                </button>
+              </div>
+            </div>
+
             {/* Mobile View: Touch Cards */}
             <div className="space-y-2.5 sm:hidden">
               {pagedDailyRows.map(([date, values]) => {
-                const dayNet = values.sales + values.services - values.payroll;
+                const dayIn = values.sales + values.services;
+                const dayOut = values.payroll + values.expenses;
+                const dayNet = dayIn - dayOut;
                 return (
                   <div
                     key={date}
                     className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs space-y-2.5"
                   >
                     <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                      <span className="font-black text-xs text-slate-900 font-mono">{date}</span>
+                      <span className="font-black text-xs text-slate-900 font-mono">
+                        {formatEthiopicDate(date, { withWeekday: true, withYearSuffix: true })}
+                      </span>
                       <span
                         className={`text-xs font-black font-mono px-2 py-0.5 rounded-lg ${
                           dayNet >= 0
@@ -617,8 +781,14 @@ export default function ReportsView({
                       </div>
                       <div className="p-2 rounded-xl bg-slate-50">
                         <span className="text-slate-400 text-[10px] block font-sans font-semibold">ደመወዝ</span>
-                        <span className="font-black text-slate-800">
+                        <span className="font-black text-rose-600">
                           {money(values.payroll)}
+                        </span>
+                      </div>
+                      <div className="p-2 rounded-xl bg-slate-50">
+                        <span className="text-slate-400 text-[10px] block font-sans font-semibold">ዕቃዎች/ወጪ</span>
+                        <span className="font-black text-amber-600">
+                          {money(values.expenses)}
                         </span>
                       </div>
                       <div className="p-2 rounded-xl bg-slate-50">
@@ -627,10 +797,15 @@ export default function ReportsView({
                           +{values.production.toLocaleString()} pcs
                         </span>
                       </div>
-                      {values.breakage > 0 && (
-                        <div className="p-2 rounded-xl bg-rose-50/80 border border-rose-100 col-span-2 flex items-center justify-between">
+                      {values.breakage > 0 ? (
+                        <div className="p-2 rounded-xl bg-rose-50/80 border border-rose-100 flex items-center justify-between">
                           <span className="text-rose-600 text-[10px] font-sans font-semibold">የተሰበረ እቃ</span>
                           <span className="font-black text-rose-700 font-mono">-{values.breakage.toLocaleString()} pcs</span>
+                        </div>
+                      ) : (
+                        <div className="p-2 rounded-xl bg-slate-50">
+                          <span className="text-slate-400 text-[10px] block font-sans font-semibold">የተሰበረ እቃ</span>
+                          <span className="font-bold text-slate-400">0 pcs</span>
                         </div>
                       )}
                     </div>
@@ -648,6 +823,7 @@ export default function ReportsView({
                     <th className="py-3 px-4">ሽያጭ</th>
                     <th className="py-3 px-4">አገልግሎቶች</th>
                     <th className="py-3 px-4">ደመወዝ</th>
+                    <th className="py-3 px-4">ዕቃዎች/ወጪ</th>
                     <th className="py-3 px-4 text-right">የተመረተ</th>
                     <th className="py-3 px-4 text-right text-rose-700">የተሰበረ</th>
                   </tr>
@@ -655,10 +831,13 @@ export default function ReportsView({
                 <tbody className="divide-y divide-slate-100 font-mono">
                   {pagedDailyRows.map(([date, values]) => (
                     <tr key={date} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="py-3 px-4 font-black text-slate-900">{date}</td>
+                      <td className="py-3 px-4 font-black text-slate-900">
+                        {formatEthiopicDate(date, { withWeekday: true, withYearSuffix: true })}
+                      </td>
                       <td className="py-3 px-4 text-slate-700">{money(values.sales)}</td>
                       <td className="py-3 px-4 text-slate-700">{money(values.services)}</td>
-                      <td className="py-3 px-4 text-slate-700">{money(values.payroll)}</td>
+                      <td className="py-3 px-4 text-rose-600">{money(values.payroll)}</td>
+                      <td className="py-3 px-4 text-amber-600">{money(values.expenses)}</td>
                       <td className="py-3 px-4 text-right font-black text-slate-900">
                         +{values.production.toLocaleString()}
                       </td>
@@ -715,11 +894,33 @@ export default function ReportsView({
         ========================================================================= */}
         {activeTab === 'sales' && (
           <div className="space-y-3">
+            {/* Quick Export Bar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-white border border-slate-200/80 rounded-2xl shadow-2xs">
+              <span className="text-xs font-bold text-slate-600">
+                የዕቃዎች ሽያጭ ደረሰኞች እና የአገልግሎት ገቢዎች
+              </span>
+              <div className="flex items-center gap-1.5 self-end sm:self-auto">
+                <button
+                  type="button"
+                  onClick={() => handleExportPrint('sales')}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-[11px] font-bold text-slate-700 shadow-2xs transition-colors cursor-pointer"
+                >
+                  <Printer className="w-3.5 h-3.5 text-slate-500" />
+                  <span>የሽያጭ አትም</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleExportCsv('sales')}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-[11px] font-bold text-emerald-800 shadow-2xs transition-colors cursor-pointer"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>የሽያጭ ኤክሴል</span>
+                </button>
+              </div>
+            </div>
             {/* Mobile View: Touch Cards */}
             <div className="space-y-2.5 sm:hidden">
               {pagedSales.map((s) => {
-                const isPaid = Number(s.paid_amount) >= Number(s.total_amount);
-                const due = Math.max(0, Number(s.total_amount) - Number(s.paid_amount));
                 const line = s.sale_lines?.[0];
                 const itemName = line?.item_name_snapshot || 'Product Sale';
                 const itemQty = line ? `${line.quantity} ${line.unit_snapshot || 'pcs'}` : '';
@@ -733,14 +934,8 @@ export default function ReportsView({
                       <span className="font-black text-sm text-slate-900 truncate">
                         {itemName}
                       </span>
-                      <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded-md font-mono ${
-                          isPaid
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                            : 'bg-amber-50 text-amber-700 border border-amber-200'
-                        }`}
-                      >
-                        {isPaid ? 'ተከፍሏል' : `ያልተከፈለ: ${money(due)}`}
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md font-mono bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        ተከፍሏል
                       </span>
                     </div>
 
@@ -749,17 +944,12 @@ export default function ReportsView({
                         <p className="font-bold text-slate-800">
                           {itemQty ? `${itemQty} · ` : ''}{s.customer_name || 'በቀጥታ ሽያጭ'}
                         </p>
-                        <p className="text-[11px] text-slate-400 mt-0.5 font-mono">{s.sale_date} · በ{recordedBy(s.profiles)} ተመዝግቧል</p>
+                        <p className="text-[11px] text-slate-400 mt-0.5 font-mono">{formatEthiopicDate(s.sale_date, { withYearSuffix: true })} · በ{recordedBy(s.profiles)} ተመዝግቧል</p>
                       </div>
                       <div className="text-right font-mono">
                         <span className="font-black text-slate-900 text-sm">
                           {money(Number(s.total_amount))}
                         </span>
-                        {!isPaid && (
-                          <span className="block text-[10px] text-slate-400">
-                            የተከፈለ: {money(Number(s.paid_amount))}
-                          </span>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -782,8 +972,6 @@ export default function ReportsView({
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {pagedSales.map((s) => {
-                    const isPaid = Number(s.paid_amount) >= Number(s.total_amount);
-                    const due = Math.max(0, Number(s.total_amount) - Number(s.paid_amount));
                     const line = s.sale_lines?.[0];
                     const itemName = line?.item_name_snapshot || 'Product Sale';
                     const itemQty = line ? `${line.quantity} ${line.unit_snapshot || 'pcs'}` : '—';
@@ -792,7 +980,7 @@ export default function ReportsView({
                       <tr key={s.id} className="hover:bg-slate-50/50 transition-colors">
                         <td className="py-3 px-4">
                           <span className="font-bold text-slate-900 block">{itemName}</span>
-                          <span className="text-[11px] text-slate-400 font-mono">{s.sale_date}</span>
+                          <span className="text-[11px] text-slate-400 font-mono">{formatEthiopicDate(s.sale_date, { withYearSuffix: true })}</span>
                         </td>
                         <td className="py-3 px-4 font-mono text-xs">{itemQty}</td>
                         <td className="py-3 px-4 text-slate-800">
@@ -806,14 +994,8 @@ export default function ReportsView({
                           {money(Number(s.paid_amount))}
                         </td>
                         <td className="py-3 px-4 text-right">
-                          <span
-                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full font-mono ${
-                              isPaid
-                                ? 'bg-emerald-50 text-emerald-700'
-                                : 'bg-amber-50 text-amber-700'
-                            }`}
-                          >
-                            {isPaid ? 'ተከፍሏል' : `ያልተከፈለ (${money(due)})`}
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full font-mono bg-emerald-50 text-emerald-700">
+                            ተከፍሏል
                           </span>
                         </td>
                       </tr>
@@ -829,7 +1011,7 @@ export default function ReportsView({
               </div>
             )}
 
-            {/* Pagination Controls */}
+            {/* Pagination Controls: Product Sales */}
             {totalSalesPages > 1 && (
               <div className="flex items-center justify-center gap-2 p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs">
                 <button
@@ -855,134 +1037,505 @@ export default function ReportsView({
                 </button>
               </div>
             )}
+
+            {/* SERVICE SALES SECTION (የአገልግሎት ሽያጭ) */}
+            <div className="space-y-3 pt-2">
+              <div className="flex items-center justify-between px-1">
+                <h3 className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                  <Receipt className="w-3.5 h-3.5 text-amber-600" />
+                  <span>የአገልግሎት ሽያጭ ({services.length})</span>
+                </h3>
+              </div>
+
+              {services.length > 0 ? (
+                <>
+                  {/* Mobile View: Service Cards */}
+                  <div className="space-y-2 sm:hidden">
+                    {pagedServices.map((srv) => {
+                      const label =
+                        {
+                          battery_charging: 'ባትሪ ቻርጅ',
+                          battery_acid: 'የባትሪ አሲድ መሙላት',
+                          welding: 'ብየዳ',
+                          door_window: 'በር እና መስኮት',
+                        }[srv.service_type] || srv.service_type;
+
+                      return (
+                        <div
+                          key={srv.id}
+                          className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center justify-between gap-2"
+                        >
+                          <div>
+                            <span className="font-black text-xs text-slate-900 block">{label}</span>
+                            <span className="text-[11px] text-slate-500 block">
+                              {srv.customer_name || 'በቀጥታ አገልግሎት'}
+                            </span>
+                            <span className="text-[10px] font-mono text-slate-400">
+                              {formatEthiopicDate(srv.created_at, { withYearSuffix: true })}
+                            </span>
+                          </div>
+                          <span className="font-mono font-black text-sm text-emerald-600">
+                            +{money(Number(srv.amount))}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Desktop View: Service Table */}
+                  <div className="hidden sm:block rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-xs">
+                    <table className="w-full text-left text-xs sm:text-sm">
+                      <thead className="bg-slate-50 text-[11px] font-bold uppercase text-slate-500 border-b border-slate-200">
+                        <tr>
+                          <th className="py-3 px-4">ቀን</th>
+                          <th className="py-3 px-4">የአገልግሎት ዓይነት</th>
+                          <th className="py-3 px-4">ደንበኛ</th>
+                          <th className="py-3 px-4 text-right">መጠን (ብር)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {pagedServices.map((srv) => {
+                          const label =
+                            {
+                              battery_charging: 'ባትሪ ቻርጅ',
+                              battery_acid: 'የባትሪ አሲድ መሙላት',
+                              welding: 'ብየዳ',
+                              door_window: 'በር እና መስኮት',
+                            }[srv.service_type] || srv.service_type;
+
+                          return (
+                            <tr key={srv.id} className="hover:bg-slate-50/50 transition-colors">
+                              <td className="py-3 px-4 font-mono text-xs text-slate-500">
+                                {formatEthiopicDate(srv.created_at, { withYearSuffix: true })}
+                              </td>
+                              <td className="py-3 px-4 font-bold text-slate-900">{label}</td>
+                              <td className="py-3 px-4 text-slate-700">
+                                {srv.customer_name || 'በቀጥታ አገልግሎት'}
+                              </td>
+                              <td className="py-3 px-4 text-right font-mono font-bold text-emerald-600">
+                                +{money(Number(srv.amount))}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Pagination Controls: Service Sales */}
+                  {totalServicePages > 1 && (
+                    <div className="flex items-center justify-center gap-2 p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs">
+                      <button
+                        type="button"
+                        disabled={servicePage <= 1}
+                        onClick={() => setServicePage((p) => Math.max(1, p - 1))}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                        <span>ቀዳሚ</span>
+                      </button>
+                      <span className="text-xs font-semibold font-mono text-slate-700 px-2">
+                        ገጽ {servicePage} ከ {totalServicePages}
+                      </span>
+                      <button
+                        type="button"
+                        disabled={servicePage >= totalServicePages}
+                        onClick={() => setServicePage((p) => Math.min(totalServicePages, p + 1))}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                      >
+                        <span>ቀጣይ</span>
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="p-8 text-center bg-white rounded-2xl border border-dashed border-slate-200 text-xs text-slate-400">
+                  በዚህ ክፍለ-ጊዜ ምንም የተመዘገበ የአገልግሎት ሽያጭ የለም።
+                </div>
+              )}
+            </div>
           </div>
         )}
 
         {/* =========================================================================
-            TAB: BREAKAGE / DAMAGED MATERIALS
+            TAB: PRODUCTION & BREAKAGES (ምርት እና የተሰበሩ እቃዎች - SIDE BY SIDE)
         ========================================================================= */}
         {activeTab === 'breakage' && (
           <div className="space-y-4">
-            {/* Product Damage Breakdown Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
-              {[
-                { name: '10/10 ብሎክ', key: '10/10' },
-                { name: '15/15 ብሎክ', key: '15/15' },
-                { name: '20/20 ብሎክ', key: '20/20' },
-                { name: 'ቴራሶ', key: 'terrace' },
-              ].map((p) => {
-                const items = breakages.filter((b) => {
-                  const prod = relation(b.products);
-                  const name = (prod?.name || '').toLowerCase();
-                  return p.key === 'terrace'
-                    ? name.includes('terrace') || name.includes('ቴራሶ')
-                    : name.includes(p.key);
-                });
-                const count = items.reduce((sum, i) => sum + Math.abs(Number(i.quantity_delta)), 0);
-
-                return (
-                  <div key={p.name} className="p-3.5 rounded-2xl bg-white border border-slate-200/90 shadow-2xs space-y-1">
-                    <span className="text-xs font-bold text-slate-800 block truncate">{p.name}</span>
-                    <div className="text-lg sm:text-xl font-black font-mono text-rose-600">
-                      -{count.toLocaleString()} <span className="text-[11px] font-sans font-bold text-slate-400">ፍሬ</span>
-                    </div>
-                  </div>
-                );
-              })}
+            {/* Quick Export Bar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-white border border-slate-200/80 rounded-2xl shadow-2xs">
+              <span className="text-xs font-bold text-slate-600">
+                የምርት እና የስብርባሪ ዕቃዎች ሪፖርት
+              </span>
+              <div className="flex items-center gap-1.5 self-end sm:self-auto">
+                <button
+                  type="button"
+                  onClick={() => handleExportPrint('production')}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-[11px] font-bold text-slate-700 shadow-2xs transition-colors cursor-pointer"
+                >
+                  <Printer className="w-3.5 h-3.5 text-slate-500" />
+                  <span>ምርት አትም</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleExportCsv('production')}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-[11px] font-bold text-emerald-800 shadow-2xs transition-colors cursor-pointer"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>ምርት ኤክሴል</span>
+                </button>
+              </div>
             </div>
 
-            {/* Mobile View: Breakage Cards */}
-            <div className="space-y-2.5 sm:hidden">
-              {pagedBreakages.map((item) => {
-                const prod = relation(item.products);
-                const qty = Math.abs(Number(item.quantity_delta));
-                const dateStr = new Date(item.created_at).toLocaleDateString('en-KE', {
-                  timeZone: 'Africa/Nairobi',
-                });
+            {/* Side-by-Side Grid: Production (Left) & Breakages (Right) */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+              {/* LEFT: PRODUCTION RUNS */}
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between px-1">
+                  <h3 className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>የተመረቱ ምርቶች ({production.length})</span>
+                  </h3>
+                </div>
 
-                return (
-                  <div key={item.id} className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs space-y-2">
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                      <span className="font-black text-xs text-slate-900">{prod?.name || 'ምርት'}</span>
-                      <span className="px-2 py-0.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-black font-mono">
-                        -{qty} {prod?.unit || 'ፍሬ'}
-                      </span>
+                {production.length > 0 ? (
+                  <>
+                    {/* Mobile Cards: Production */}
+                    <div className="space-y-2 sm:hidden">
+                      {pagedProduction.map((run) => {
+                        const prodName =
+                          products.find((pr) => pr.id === run.output_product_id)?.name || 'ምርት';
+                        return (
+                          <div key={run.id} className="p-3 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center justify-between gap-2">
+                            <div>
+                              <span className="font-bold text-xs text-slate-900 block">{prodName}</span>
+                              <span className="text-[11px] font-mono text-slate-400">
+                                {formatEthiopicDate(run.production_date, { withYearSuffix: true })}
+                              </span>
+                            </div>
+                            <span className="px-2.5 py-0.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-black font-mono">
+                              +{Number(run.output_quantity || 0).toLocaleString()} ፍሬ
+                            </span>
+                          </div>
+                        );
+                      })}
                     </div>
-                    <div className="flex items-center justify-between text-xs text-slate-500 font-mono">
-                      <span className="truncate text-slate-700 font-sans max-w-[180px]">{item.reason}</span>
-                      <span>{dateStr}</span>
+
+                    {/* Desktop Table: Production */}
+                    <div className="hidden sm:block rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-xs">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-slate-50 text-[11px] font-bold uppercase text-slate-500 border-b border-slate-200">
+                          <tr>
+                            <th className="py-2.5 px-3.5">ቀን</th>
+                            <th className="py-2.5 px-3.5">የምርት ዓይነት</th>
+                            <th className="py-2.5 px-3.5 text-right">የተመረተ</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 font-sans">
+                          {pagedProduction.map((run) => {
+                            const prodName =
+                              products.find((pr) => pr.id === run.output_product_id)?.name || 'ምርት';
+                            return (
+                              <tr key={run.id} className="hover:bg-slate-50/50 transition-colors">
+                                <td className="py-2.5 px-3.5 font-mono text-xs text-slate-500 whitespace-nowrap">
+                                  {formatEthiopicDate(run.production_date, { withYearSuffix: true })}
+                                </td>
+                                <td className="py-2.5 px-3.5 font-bold text-slate-900">{prodName}</td>
+                                <td className="py-2.5 px-3.5 text-right font-mono whitespace-nowrap">
+                                  <span className="inline-block px-2 py-0.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 font-black text-xs">
+                                    +{Number(run.output_quantity || 0).toLocaleString()} ፍሬ
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
                     </div>
+
+                    {/* Pagination: Production */}
+                    {totalProductionPages > 1 && (
+                      <div className="flex items-center justify-center gap-2 p-3 rounded-2xl border border-slate-200 bg-white shadow-2xs">
+                        <button
+                          type="button"
+                          disabled={productionPage <= 1}
+                          onClick={() => setProductionPage((p) => Math.max(1, p - 1))}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
+                        >
+                          <ChevronLeft className="w-3.5 h-3.5" />
+                          <span>ቀዳሚ</span>
+                        </button>
+                        <span className="text-xs font-semibold font-mono text-slate-700 px-2">
+                          ገጽ {productionPage} ከ {totalProductionPages}
+                        </span>
+                        <button
+                          type="button"
+                          disabled={productionPage >= totalProductionPages}
+                          onClick={() => setProductionPage((p) => Math.min(totalProductionPages, p + 1))}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
+                        >
+                          <span>ቀጣይ</span>
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="p-8 text-center bg-white rounded-2xl border border-dashed border-slate-200 text-xs text-slate-400">
+                    በዚህ ክፍለ-ጊዜ ውስጥ ምንም የተመረተ ምርት የለም።
                   </div>
-                );
-              })}
+                )}
+              </div>
+
+              {/* RIGHT: BREAKAGES */}
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between px-1">
+                  <h3 className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                    <PackageMinus className="w-3.5 h-3.5 text-rose-600" />
+                    <span>የተሰበሩ እቃዎች ({breakages.length})</span>
+                  </h3>
+                </div>
+
+                {breakages.length > 0 ? (
+                  <>
+                    {/* Mobile View: Breakage Cards */}
+                    <div className="space-y-2 sm:hidden">
+                      {pagedBreakages.map((item) => {
+                        const prod = relation(item.products);
+                        const qty = Math.abs(Number(item.quantity_delta));
+                        const dateStr = formatEthiopicDate(item.created_at, { withYearSuffix: true });
+
+                        return (
+                          <div key={item.id} className="p-3 rounded-2xl border border-slate-200/90 bg-white shadow-2xs space-y-1.5">
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
+                              <span className="font-black text-xs text-slate-900">{prod?.name || 'ምርት'}</span>
+                              <span className="px-2 py-0.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-black font-mono">
+                                -{qty} {prod?.unit || 'ፍሬ'}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between text-xs text-slate-500 font-mono">
+                              <span className="truncate text-slate-700 font-sans max-w-[180px]">{item.reason}</span>
+                              <span>{dateStr}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Desktop View: Breakage Table */}
+                    <div className="hidden sm:block rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-xs">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-slate-50 text-[11px] font-bold uppercase text-slate-500 border-b border-slate-200">
+                          <tr>
+                            <th className="py-2.5 px-3.5">ቀን</th>
+                            <th className="py-2.5 px-3.5">የምርት ዓይነት</th>
+                            <th className="py-2.5 px-3.5 text-center">የተሰበረ</th>
+                            <th className="py-2.5 px-3.5">ምክንያት</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 font-sans">
+                          {pagedBreakages.map((item) => {
+                            const prod = relation(item.products);
+                            const qty = Math.abs(Number(item.quantity_delta));
+                            const dateStr = formatEthiopicDate(item.created_at, { withYearSuffix: true });
+
+                            return (
+                              <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
+                                <td className="py-2.5 px-3.5 font-mono text-xs text-slate-500 whitespace-nowrap">{dateStr}</td>
+                                <td className="py-2.5 px-3.5 font-bold text-slate-900">{prod?.name || 'ምርት'}</td>
+                                <td className="py-2.5 px-3.5 text-center font-mono whitespace-nowrap">
+                                  <span className="inline-block px-2 py-0.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 font-black text-xs">
+                                    -{qty} {prod?.unit || 'ፍሬ'}
+                                  </span>
+                                </td>
+                                <td className="py-2.5 px-3.5 text-xs text-slate-600">{item.reason}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Pagination: Breakages */}
+                    {totalBreakagePages > 1 && (
+                      <div className="flex items-center justify-center gap-2 p-3 rounded-2xl border border-slate-200 bg-white shadow-2xs">
+                        <button
+                          type="button"
+                          disabled={breakagePage <= 1}
+                          onClick={() => setBreakagePage((p) => Math.max(1, p - 1))}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
+                        >
+                          <ChevronLeft className="w-3.5 h-3.5" />
+                          <span>ቀዳሚ</span>
+                        </button>
+                        <span className="text-xs font-semibold font-mono text-slate-700 px-2">
+                          ገጽ {breakagePage} ከ {totalBreakagePages}
+                        </span>
+                        <button
+                          type="button"
+                          disabled={breakagePage >= totalBreakagePages}
+                          onClick={() => setBreakagePage((p) => Math.min(totalBreakagePages, p + 1))}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
+                        >
+                          <span>ቀጣይ</span>
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="p-8 text-center bg-white rounded-2xl border border-dashed border-slate-200 text-xs text-slate-400">
+                    በዚህ ክፍለ-ጊዜ ውስጥ ምንም የተመዘገበ ስብርባሪ የለም።
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* =========================================================================
+            TAB: PAYROLL (የሰራተኞች ደመወዝ)
+        ========================================================================= */}
+        {activeTab === 'payroll' && (
+          <div className="space-y-4">
+            {/* Quick Export Bar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-white border border-slate-200/80 rounded-2xl shadow-2xs">
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-bold text-slate-600">የሰራተኞች ደመወዝ ሪፖርት</span>
+                <span className="text-xs font-mono font-black text-rose-600 bg-rose-50 px-2.5 py-0.5 rounded-lg border border-rose-200">
+                  ጠቅላላ፦ {money(payrollPaid)}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 self-end sm:self-auto">
+                <button
+                  type="button"
+                  onClick={() => handleExportPrint('payroll')}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-[11px] font-bold text-slate-700 shadow-2xs transition-colors cursor-pointer"
+                >
+                  <Printer className="w-3.5 h-3.5 text-slate-500" />
+                  <span>ደመወዝ አትም</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleExportCsv('payroll')}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-[11px] font-bold text-emerald-800 shadow-2xs transition-colors cursor-pointer"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>ደመወዝ ኤክሴል</span>
+                </button>
+              </div>
             </div>
 
-            {/* Desktop View: Breakage Table */}
-            <div className="hidden sm:block rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-xs">
-              <table className="w-full text-left text-xs sm:text-sm">
-                <thead className="bg-slate-50 text-[11px] font-bold uppercase text-slate-500 border-b border-slate-200">
-                  <tr>
-                    <th className="py-3 px-4">ቀን</th>
-                    <th className="py-3 px-4">የምርት ዓይነት</th>
-                    <th className="py-3 px-4 text-center">የተሰበረው ብዛት</th>
-                    <th className="py-3 px-4">ምክንያት / ማስታወሻ</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 font-sans">
-                  {pagedBreakages.map((item) => {
-                    const prod = relation(item.products);
-                    const qty = Math.abs(Number(item.quantity_delta));
-                    const dateStr = new Date(item.created_at).toLocaleDateString('en-KE', {
-                      timeZone: 'Africa/Nairobi',
-                    });
-
+            {payroll.length > 0 ? (
+              <>
+                {/* Mobile View: Payroll Cards */}
+                <div className="space-y-2 sm:hidden">
+                  {pagedPayroll.map((pay) => {
+                    const typeLabel =
+                      pay.pay_type === 'daily'
+                        ? 'የቀን'
+                        : pay.pay_type === 'weekly'
+                        ? 'ሳምንታዊ'
+                        : 'ወርሃዊ';
                     return (
-                      <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="py-3 px-4 font-mono text-xs text-slate-500">{dateStr}</td>
-                        <td className="py-3 px-4 font-bold text-slate-900">{prod?.name || 'ምርት'}</td>
-                        <td className="py-3 px-4 text-center font-mono">
-                          <span className="inline-block px-2.5 py-0.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 font-black text-xs">
-                            -{qty} {prod?.unit || 'ፍሬ'}
+                      <div
+                        key={pay.id}
+                        className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex items-center justify-between gap-2"
+                      >
+                        <div>
+                          <span className="font-black text-xs text-slate-900 block">
+                            {pay.worker_name || 'ሰራተኛ'}
                           </span>
-                        </td>
-                        <td className="py-3 px-4 text-xs text-slate-600">{item.reason}</td>
-                      </tr>
+                          <span className="text-[11px] text-slate-500 block">
+                            {typeLabel} · {pay.status === 'paid' ? 'ተከፍሏል' : pay.status}
+                          </span>
+                          <span className="text-[10px] font-mono text-slate-400">
+                            {formatEthiopicDate(pay.period_start, { withYearSuffix: true })}
+                          </span>
+                        </div>
+                        <span className="font-mono font-black text-sm text-rose-600">
+                          -{money(Number(pay.amount))}
+                        </span>
+                      </div>
                     );
                   })}
-                </tbody>
-              </table>
-            </div>
+                </div>
 
-            {breakages.length === 0 && (
+                {/* Desktop View: Payroll Table */}
+                <div className="hidden sm:block rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-xs">
+                  <table className="w-full text-left text-xs sm:text-sm">
+                    <thead className="bg-slate-50 text-[11px] font-bold uppercase text-slate-500 border-b border-slate-200">
+                      <tr>
+                        <th className="py-3 px-4">ቀን</th>
+                        <th className="py-3 px-4">የሰራተኛ ስም</th>
+                        <th className="py-3 px-4">የክፍያ ዓይነት</th>
+                        <th className="py-3 px-4">ሁኔታ</th>
+                        <th className="py-3 px-4 text-right">መጠን (ብር)</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {pagedPayroll.map((pay) => {
+                        const typeLabel =
+                          pay.pay_type === 'daily'
+                            ? 'የቀን'
+                            : pay.pay_type === 'weekly'
+                            ? 'ሳምንታዊ'
+                            : 'ወርሃዊ';
+                        return (
+                          <tr key={pay.id} className="hover:bg-slate-50/50 transition-colors">
+                            <td className="py-3 px-4 font-mono text-xs text-slate-500">
+                              {formatEthiopicDate(pay.period_start, { withYearSuffix: true })}
+                            </td>
+                            <td className="py-3 px-4 font-bold text-slate-900">
+                              {pay.worker_name || 'ሰራተኛ'}
+                            </td>
+                            <td className="py-3 px-4 text-slate-600">{typeLabel}</td>
+                            <td className="py-3 px-4">
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                {pay.status === 'paid' ? 'ተከፍሏል' : pay.status}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-right font-mono font-bold text-rose-600">
+                              -{money(Number(pay.amount))}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Pagination Controls: Payroll */}
+                {totalPayrollPages > 1 && (
+                  <div className="flex items-center justify-center gap-2 p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs">
+                    <button
+                      type="button"
+                      disabled={payrollPage <= 1}
+                      onClick={() => setPayrollPage((p) => Math.max(1, p - 1))}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      <span>ቀዳሚ</span>
+                    </button>
+                    <span className="text-xs font-semibold font-mono text-slate-700 px-2">
+                      ገጽ {payrollPage} ከ {totalPayrollPages}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={payrollPage >= totalPayrollPages}
+                      onClick={() => setPayrollPage((p) => Math.min(totalPayrollPages, p + 1))}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                    >
+                      <span>ቀጣይ</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : (
               <div className="p-10 text-center bg-white rounded-2xl border border-dashed border-slate-200 text-xs text-slate-400">
-                በዚህ ክፍለ-ጊዜ ውስጥ ምንም የተመዘገበ ስብርባሪ የለም።
-              </div>
-            )}
-
-            {/* Pagination Controls */}
-            {totalBreakagePages > 1 && (
-              <div className="flex items-center justify-center gap-2 p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs">
-                <button
-                  type="button"
-                  disabled={breakagePage <= 1}
-                  onClick={() => setBreakagePage((p) => Math.max(1, p - 1))}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                  <span>ቀዳሚ</span>
-                </button>
-                <span className="text-xs font-semibold font-mono text-slate-700 px-2">
-                  ገጽ {breakagePage} ከ {totalBreakagePages}
-                </span>
-                <button
-                  type="button"
-                  disabled={breakagePage >= totalBreakagePages}
-                  onClick={() => setBreakagePage((p) => Math.min(totalBreakagePages, p + 1))}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                >
-                  <span>ቀጣይ</span>
-                  <ChevronRight className="w-4 h-4" />
-                </button>
+                በዚህ ክፍለ-ጊዜ ምንም የተመዘገበ የደመወዝ ክፍያ የለም።
               </div>
             )}
           </div>
@@ -1028,9 +1581,7 @@ export default function ReportsView({
                       </span>
                     </div>
                     <time className="text-[10px] text-slate-400 font-mono">
-                      {new Date(entry.created_at).toLocaleDateString('en-KE', {
-                        timeZone: 'Africa/Nairobi',
-                      })}
+                      {formatEthiopicDate(entry.created_at, { withYearSuffix: true })}
                     </time>
                   </div>
 

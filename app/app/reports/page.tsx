@@ -1,5 +1,6 @@
 import { db } from '@/lib/supabase/server';
 import ReportsView from '@/app/owner/reports/reports-view';
+import { getTodayEthiopic, ethiopicToGregorian } from '@/lib/ethiopian-calendar';
 
 const todayNairobi = () =>
   new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Nairobi' }).format(new Date());
@@ -20,16 +21,25 @@ export default async function AppReportsPage({
   const client = await db();
   const today = todayNairobi();
   const params = await searchParams;
-  const mode = ['daily', 'weekly', 'monthly', 'custom'].includes(params.period || '')
+  const mode = ['daily', 'weekly', 'monthly', 'half_year', 'year', 'custom'].includes(params.period || '')
     ? params.period!
     : 'monthly';
+
+  const todayEth = getTodayEthiopic();
+  const ethMonthStart = ethiopicToGregorian(todayEth.year, todayEth.month, 1);
 
   let from =
     mode === 'daily'
       ? today
       : mode === 'weekly'
         ? shiftDay(today, -6)
-        : `${today.slice(0, 7)}-01`;
+        : mode === 'monthly'
+          ? ethMonthStart
+          : mode === 'half_year'
+            ? shiftDay(today, -180)
+            : mode === 'year'
+              ? shiftDay(today, -365)
+              : ethMonthStart;
   let to = today;
 
   if (mode === 'custom') {
@@ -54,6 +64,7 @@ export default async function AppReportsPage({
     { data: products },
     { data: audit },
     { data: breakages },
+    { data: expenses },
   ] = await Promise.all([
     client
       .from('sales')
@@ -64,14 +75,14 @@ export default async function AppReportsPage({
       .lte('sale_date', to)
       .neq('status', 'void')
       .order('sale_date', { ascending: false })
-      .limit(1000),
+      .limit(5000),
     client
       .from('service_payments')
       .select('id,service_type,customer_name,amount,created_at')
       .gte('created_at', startTime)
       .lte('created_at', endTime)
       .order('created_at', { ascending: false })
-      .limit(1000),
+      .limit(5000),
     client
       .from('payroll_records')
       .select('id,worker_name,pay_type,period_start,amount,status')
@@ -79,14 +90,14 @@ export default async function AppReportsPage({
       .gte('period_start', from)
       .lte('period_start', to)
       .order('period_start', { ascending: false })
-      .limit(1000),
+      .limit(5000),
     client
       .from('production_runs')
       .select('id,production_date,output_quantity,output_product_id')
       .gte('production_date', from)
       .lte('production_date', to)
       .order('production_date', { ascending: false })
-      .limit(1000),
+      .limit(5000),
     client
       .from('products')
       .select('id,name,unit,category,stock_on_hand,low_stock_threshold,selling_price')
@@ -100,7 +111,7 @@ export default async function AppReportsPage({
       .gte('created_at', startTime)
       .lte('created_at', endTime)
       .order('created_at', { ascending: false })
-      .limit(1000),
+      .limit(5000),
     client
       .from('inventory_movements')
       .select(
@@ -110,7 +121,14 @@ export default async function AppReportsPage({
       .gte('created_at', startTime)
       .lte('created_at', endTime)
       .order('created_at', { ascending: false })
-      .limit(1000),
+      .limit(5000),
+    client
+      .from('expenses')
+      .select('id,expense_date,category,item_name,amount,notes,created_at,profiles:recorded_by(display_name)')
+      .gte('expense_date', from)
+      .lte('expense_date', to)
+      .order('expense_date', { ascending: false })
+      .limit(5000),
   ]);
 
   const CERT_CONFIGS = [
@@ -178,15 +196,35 @@ export default async function AppReportsPage({
     }
   }
 
+  const resolvedMap = new Map<string, string>();
+  try {
+    const { data: resolutions, error: resErr } = await client
+      .from('production_alert_resolutions')
+      .select('period_key, product_key, resolution_note')
+      .gte('period_key', from)
+      .lte('period_key', to);
+    if (!resErr && resolutions) {
+      for (const r of resolutions) {
+        resolvedMap.set(`${r.period_key}:${r.product_key}`, r.resolution_note || 'ተጣርቷል');
+      }
+    }
+  } catch {
+    // ignore if table not created yet
+  }
+
   const cementYieldChecks = Array.from(dailyProductYield.values())
-    .filter((d) => d.cement > 0 || d.blocks > 0)
+    .filter((d) => (d.cement > 0 || d.blocks > 0) && d.date < today)
     .map((item) => {
       const cfg = CERT_CONFIGS.find((c) => c.key === item.productKey)!;
       const minExpected = item.cement * cfg.minRate;
       const maxExpected = item.cement * cfg.maxRate;
       const shortfall = minExpected - item.blocks;
-      const isFlagged = item.cement > 0 && shortfall >= cfg.threshold;
-      const explanation = isFlagged
+      const rawFlagged = item.cement > 0 && shortfall >= cfg.threshold;
+      const resolvedNote = resolvedMap.get(`${item.date}:${item.productKey}`);
+      const isFlagged = rawFlagged && !resolvedNote;
+      const explanation = resolvedNote
+        ? `✓ ተጣርቷል (${resolvedNote})`
+        : isFlagged
         ? `${shortfall} ብሎክ ጉድለት (ከ1 ከረጢት በላይ)`
         : 'መደበኛ';
 
@@ -214,8 +252,10 @@ export default async function AppReportsPage({
       services={services ?? []}
       payroll={payroll ?? []}
       production={production ?? []}
+      products={products ?? []}
       audit={audit ?? []}
       breakages={breakages ?? []}
+      expenses={expenses ?? []}
       cementYieldChecks={cementYieldChecks}
     />
   );
