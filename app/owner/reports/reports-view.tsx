@@ -201,7 +201,7 @@ export default function ReportsView({
   cementYieldChecks,
 }: ReportsViewProps) {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'daily' | 'sales' | 'breakage' | 'payroll' | 'audit'>('daily');
+  const [activeTab, setActiveTab] = useState<'daily' | 'sales' | 'expenses' | 'breakage' | 'payroll' | 'audit'>('daily');
   const [customOpen, setCustomOpen] = useState(mode === 'custom');
   const [fromDate, setFromDate] = useState(from);
   const [toDate, setToDate] = useState(to);
@@ -275,6 +275,7 @@ export default function ReportsView({
   const [productionPage, setProductionPage] = useState(1);
   const [breakagePage, setBreakagePage] = useState(1);
   const [payrollPage, setPayrollPage] = useState(1);
+  const [expensesPage, setExpensesPage] = useState(1);
 
   const totalDailyPages = Math.max(1, Math.ceil(dailyRows.length / PAGE_SIZE));
   const pagedDailyRows = dailyRows.slice((dailyPage - 1) * PAGE_SIZE, dailyPage * PAGE_SIZE);
@@ -296,6 +297,9 @@ export default function ReportsView({
 
   const totalPayrollPages = Math.max(1, Math.ceil(payroll.length / PAGE_SIZE));
   const pagedPayroll = payroll.slice((payrollPage - 1) * PAGE_SIZE, payrollPage * PAGE_SIZE);
+
+  const totalExpensesPages = Math.max(1, Math.ceil(expenses.length / PAGE_SIZE));
+  const pagedExpenses = expenses.slice((expensesPage - 1) * PAGE_SIZE, expensesPage * PAGE_SIZE);
 
   const applyPeriod = (newMode: string) => {
     if (newMode === 'custom') {
@@ -692,6 +696,7 @@ export default function ReportsView({
           {[
             { id: 'daily', label: 'ዕለታዊ እንቅስቃሴ', count: dailyRows.length, icon: ChartNoAxesCombined },
             { id: 'sales', label: 'የሽያጭ ደረሰኞች', count: sales.length + services.length, icon: Receipt },
+            { id: 'expenses', label: 'ወጪዎች', count: expenses.length, icon: ArrowUpRight },
             { id: 'breakage', label: 'ምርት', count: production.length + breakages.length, icon: Layers },
             { id: 'payroll', label: 'ደመወዝ', count: payroll.length, icon: Wallet },
             { id: 'audit', label: 'የለውጥ ታሪክ', count: audit.length, icon: Activity },
@@ -1404,6 +1409,161 @@ export default function ReportsView({
                 )}
               </div>
             </div>
+          </div>
+        )}
+
+        {/* =========================================================================
+            TAB: EXPENSES (ወጪዎች እና ግዢ - SHOWS DONE BY)
+        ========================================================================= */}
+        {activeTab === 'expenses' && (
+          <div className="space-y-4">
+            {/* Quick Export Bar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-white border border-slate-200/80 rounded-2xl shadow-2xs">
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-bold text-slate-600">የወጪዎች እና ግዢ ሪፖርት</span>
+                <span className="text-xs font-mono font-black text-rose-600 bg-rose-50 px-2.5 py-0.5 rounded-lg border border-rose-200">
+                  ጠቅላላ፦ {money(expensesPaid)}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 self-end sm:self-auto">
+                <button
+                  type="button"
+                  onClick={() => handleExportPrint('cashflow')}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-[11px] font-bold text-slate-700 shadow-2xs transition-colors cursor-pointer"
+                >
+                  <Printer className="w-3.5 h-3.5 text-slate-500" />
+                  <span>ወጪ አትም</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleExportCsv('cashflow')}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-[11px] font-bold text-emerald-800 shadow-2xs transition-colors cursor-pointer"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>ወጪ ኤክሴል</span>
+                </button>
+              </div>
+            </div>
+
+            {expenses.length > 0 ? (
+              <>
+                {/* Mobile View: Expense Cards */}
+                <div className="space-y-2 sm:hidden">
+                  {pagedExpenses.map((exp) => {
+                    const catLabel =
+                      exp.category === 'production_materials'
+                        ? 'ለቴራሶ እና ብሎክ'
+                        : exp.category === 'workshop_services'
+                        ? 'ለአገልግሎት'
+                        : 'ሌላ ወጪ';
+                    return (
+                      <div
+                        key={exp.id}
+                        className="p-3.5 rounded-2xl border border-slate-200/90 bg-white shadow-2xs space-y-1.5"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-black text-xs text-slate-900">{exp.item_name}</span>
+                          <span className="font-mono font-black text-sm text-rose-600">
+                            -{money(Number(exp.amount))}
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-slate-500 flex flex-wrap items-center gap-1.5">
+                          <span>{catLabel}</span>
+                          <span>·</span>
+                          <span className="font-mono">
+                            {formatEthiopicDate(exp.expense_date, { withYearSuffix: true })}
+                          </span>
+                          <span>·</span>
+                          <span className="font-semibold text-slate-700">
+                            በ{recordedBy(exp.profiles ?? null)} ተመዝግቧል
+                          </span>
+                        </div>
+                        {exp.notes && (
+                          <p className="text-[11px] text-slate-500 bg-slate-50 px-2.5 py-1.5 rounded-lg">
+                            {exp.notes}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Desktop View: Expense Table */}
+                <div className="hidden sm:block rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-xs">
+                  <table className="w-full text-left text-xs sm:text-sm">
+                    <thead className="bg-slate-50 text-[11px] font-bold uppercase text-slate-500 border-b border-slate-200">
+                      <tr>
+                        <th className="py-3 px-4">ቀን</th>
+                        <th className="py-3 px-4">የወጪው / እቃው ስም</th>
+                        <th className="py-3 px-4">ምድብ</th>
+                        <th className="py-3 px-4">የመዘገበው</th>
+                        <th className="py-3 px-4">ማስታወሻ</th>
+                        <th className="py-3 px-4 text-right">መጠን (ብር)</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {pagedExpenses.map((exp) => {
+                        const catLabel =
+                          exp.category === 'production_materials'
+                            ? 'ለቴራሶ እና ብሎክ'
+                            : exp.category === 'workshop_services'
+                            ? 'ለአገልግሎት'
+                            : 'ሌላ ወጪ';
+                        return (
+                          <tr key={exp.id} className="hover:bg-slate-50/50 transition-colors">
+                            <td className="py-3 px-4 font-mono text-xs text-slate-500 whitespace-nowrap">
+                              {formatEthiopicDate(exp.expense_date, { withYearSuffix: true })}
+                            </td>
+                            <td className="py-3 px-4 font-bold text-slate-900">{exp.item_name}</td>
+                            <td className="py-3 px-4 text-slate-600">{catLabel}</td>
+                            <td className="py-3 px-4 font-semibold text-slate-800">
+                              {recordedBy(exp.profiles ?? null)}
+                            </td>
+                            <td className="py-3 px-4 text-xs text-slate-500 max-w-xs truncate">
+                              {exp.notes || '—'}
+                            </td>
+                            <td className="py-3 px-4 text-right font-mono font-bold text-rose-600 whitespace-nowrap">
+                              -{money(Number(exp.amount))}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Pagination Controls: Expenses */}
+                {totalExpensesPages > 1 && (
+                  <div className="flex items-center justify-center gap-2 p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs">
+                    <button
+                      type="button"
+                      disabled={expensesPage <= 1}
+                      onClick={() => setExpensesPage((p) => Math.max(1, p - 1))}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      <span>ቀዳሚ</span>
+                    </button>
+                    <span className="text-xs font-semibold font-mono text-slate-700 px-2">
+                      ገጽ {expensesPage} ከ {totalExpensesPages}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={expensesPage >= totalExpensesPages}
+                      onClick={() => setExpensesPage((p) => Math.min(totalExpensesPages, p + 1))}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                    >
+                      <span>ቀጣይ</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="p-10 text-center bg-white rounded-2xl border border-dashed border-slate-200 text-xs text-slate-400">
+                በዚህ ክፍለ-ጊዜ ምንም የተመዘገበ ወጪ የለም።
+              </div>
+            )}
           </div>
         )}
 

@@ -40,6 +40,14 @@ function getProductName(
   return products.name || 'ምርት';
 }
 
+function getDisplayName(
+  profiles?: { display_name: string | null } | { display_name: string | null }[] | null
+): string {
+  if (!profiles) return '—';
+  if (Array.isArray(profiles)) return profiles[0]?.display_name || '—';
+  return profiles.display_name || '—';
+}
+
 function addSimpleHeader(
   ws: ExcelJS.Worksheet,
   title: string,
@@ -286,13 +294,14 @@ export async function exportReportToExcel(type: ReportExportType, data: ReportEx
     addSimpleHeader(ws, 'የምርት ሽያጭ ዝርዝር', fromEth, toEth, 6);
 
     const h = ws.getRow(4);
-    h.values = ['ቀን', 'የተሸጠ እቃ', 'ብዛት', 'የአንዱ ዋጋ', 'ጠቅላላ ዋጋ (ብር)', 'ደንበኛ'];
-    styleHeader(h, 6, [3, 4, 5]);
+    h.values = ['ቀን', 'የተሸጠ እቃ', 'ብዛት', 'የአንዱ ዋጋ', 'ጠቅላላ ዋጋ (ብር)', 'ደንበኛ', 'የመዘገበው'];
+    styleHeader(h, 7, [3, 4, 5]);
 
-    const flatLines: { date: string; product: string; qty: number; unitPrice: number; customer: string }[] = [];
+    const flatLines: { date: string; product: string; qty: number; unitPrice: number; customer: string; recordedBy: string }[] = [];
     for (const s of data.sales) {
       const ethDate = formatEthiopicDate(s.sale_date);
       const customer = s.customer_name || 'በቀጥታ ሽያጭ';
+      const rec = getDisplayName(s.profiles);
       if (s.sale_lines && s.sale_lines.length > 0) {
         for (const l of s.sale_lines) {
           flatLines.push({
@@ -301,6 +310,7 @@ export async function exportReportToExcel(type: ReportExportType, data: ReportEx
             qty: Number(l.quantity || 0),
             unitPrice: Number(l.unit_price || 0),
             customer,
+            recordedBy: rec,
           });
         }
       } else {
@@ -310,6 +320,7 @@ export async function exportReportToExcel(type: ReportExportType, data: ReportEx
           qty: 1,
           unitPrice: Number(s.paid_amount || s.total_amount || 0),
           customer,
+          recordedBy: rec,
         });
       }
     }
@@ -317,8 +328,8 @@ export async function exportReportToExcel(type: ReportExportType, data: ReportEx
     let rowIdx = 5;
     if (flatLines.length === 0) {
       const r = ws.getRow(rowIdx);
-      r.values = ['—', 'ሽያጭ የለም', 0, 0, 0, '—'];
-      styleRow(r, 6, 0, [3, 4, 5]);
+      r.values = ['—', 'ሽያጭ የለም', 0, 0, 0, '—', '—'];
+      styleRow(r, 7, 0, [3, 4, 5]);
       rowIdx++;
     } else {
       flatLines.forEach((line, idx) => {
@@ -330,8 +341,9 @@ export async function exportReportToExcel(type: ReportExportType, data: ReportEx
           line.unitPrice,
           { formula: `C${rowIdx}*D${rowIdx}` },
           line.customer,
+          line.recordedBy,
         ];
-        styleRow(r, 6, idx, [3, 4, 5]);
+        styleRow(r, 7, idx, [3, 4, 5]);
         r.getCell(3).numFmt = '#,##0';
         r.getCell(4).numFmt = '#,##0.00';
         r.getCell(5).numFmt = '#,##0.00';
@@ -340,14 +352,14 @@ export async function exportReportToExcel(type: ReportExportType, data: ReportEx
     }
 
     const last = rowIdx - 1;
-    ws.autoFilter = { from: 'A4', to: `F${last}` };
+    ws.autoFilter = { from: 'A4', to: `G${last}` };
 
     const tot = ws.getRow(rowIdx);
-    tot.values = ['ጠቅላላ', '', { formula: `SUM(C5:C${last})` }, '', { formula: `SUM(E5:E${last})` }, ''];
-    styleTotal(tot, 6, [3, 4, 5]);
+    tot.values = ['ጠቅላላ', '', { formula: `SUM(C5:C${last})` }, '', { formula: `SUM(E5:E${last})` }, '', ''];
+    styleTotal(tot, 7, [3, 4, 5]);
     tot.getCell(3).numFmt = '#,##0';
     tot.getCell(5).numFmt = '#,##0.00';
-    setWidths(ws, [20, 24, 12, 15, 18, 22]);
+    setWidths(ws, [20, 24, 12, 15, 18, 22, 18]);
 
     // Services sheet
     const sws = wb.addWorksheet('አገልግሎት');
@@ -392,14 +404,14 @@ export async function exportReportToExcel(type: ReportExportType, data: ReportEx
     addSimpleHeader(ews, 'የወጪዎች እና ግዢ ዝርዝር', fromEth, toEth, 5);
 
     const eh = ews.getRow(4);
-    eh.values = ['ቀን', 'ምድብ', 'እቃ / ወጪ', 'መጠን (ብር)', 'ማስታወሻ'];
-    styleHeader(eh, 5, [4]);
+    eh.values = ['ቀን', 'ምድብ', 'እቃ / ወጪ', 'መጠን (ብር)', 'ማስታወሻ', 'የመዘገበው'];
+    styleHeader(eh, 6, [4]);
 
     let eRow = 5;
     if (data.expenses.length === 0) {
       const r = ews.getRow(eRow);
-      r.values = ['—', '—', 'ወጪ የለም', 0, '—'];
-      styleRow(r, 5, 0, [4]);
+      r.values = ['—', '—', 'ወጪ የለም', 0, '—', '—'];
+      styleRow(r, 6, 0, [4]);
       eRow++;
     } else {
       data.expenses.forEach((exp, idx) => {
@@ -410,19 +422,20 @@ export async function exportReportToExcel(type: ReportExportType, data: ReportEx
           exp.item_name,
           Number(exp.amount || 0),
           exp.notes || '—',
+          getDisplayName(exp.profiles),
         ];
-        styleRow(r, 5, idx, [4], [5]);
+        styleRow(r, 6, idx, [4], [5]);
         r.getCell(4).numFmt = '#,##0.00';
         eRow++;
       });
     }
 
-    ews.autoFilter = { from: 'A4', to: `E${eRow - 1}` };
+    ews.autoFilter = { from: 'A4', to: `F${eRow - 1}` };
     const etot = ews.getRow(eRow);
-    etot.values = ['ጠቅላላ', '', '', { formula: `SUM(D5:D${eRow - 1})` }, ''];
-    styleTotal(etot, 5, [4]);
+    etot.values = ['ጠቅላላ', '', '', { formula: `SUM(D5:D${eRow - 1})` }, '', ''];
+    styleTotal(etot, 6, [4]);
     etot.getCell(4).numFmt = '#,##0.00';
-    setWidths(ews, [20, 22, 22, 16, 36]);
+    setWidths(ews, [20, 22, 22, 16, 36, 18]);
   }
 
   // 5. ደመወዝ (Payroll)

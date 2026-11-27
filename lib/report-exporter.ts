@@ -575,6 +575,7 @@ export function exportReportToPrint(type: ReportExportType, data: ReportExportDa
           <th>ምድብ</th>
           <th class="text-right">መጠን (ብር)</th>
           <th>ማስታወሻ</th>
+          <th>የመዘገበው</th>
         </tr>
       </thead>
       <tbody>
@@ -582,23 +583,27 @@ export function exportReportToPrint(type: ReportExportType, data: ReportExportDa
           data.expenses.length > 0
             ? data.expenses
                 .map(
-                  (e) => `
+                  (e) => {
+                    const rec = Array.isArray(e.profiles) ? e.profiles[0]?.display_name : e.profiles?.display_name;
+                    return `
           <tr>
             <td class="font-mono">${formatEthiopicDate(e.expense_date, { withYearSuffix: true })}</td>
             <td class="font-bold">${e.item_name}</td>
             <td>${expenseCategoryNames[e.category] || e.category}</td>
             <td class="text-right font-mono font-bold">${Number(e.amount).toFixed(2)}</td>
             <td>${e.notes || '—'}</td>
+            <td>${rec || '—'}</td>
           </tr>
-        `
+        `;
+                  }
                 )
                 .join('')
-            : '<tr><td colspan="5" class="text-center">በዚህ ክፍለ-ጊዜ የተመዘገበ ወጪ የለም</td></tr>'
+            : '<tr><td colspan="6" class="text-center">በዚህ ክፍለ-ጊዜ የተመዘገበ ወጪ የለም</td></tr>'
         }
         <tr style="background:#f1f5f9;font-weight:bold;">
           <td colspan="3">ጠቅላላ የወጪ ድምር</td>
           <td class="text-right font-mono">${formatMoney(totalExpenses)}</td>
-          <td></td>
+          <td colspan="2"></td>
         </tr>
       </tbody>
     </table>
@@ -623,6 +628,7 @@ export function exportReportToPrint(type: ReportExportType, data: ReportExportDa
           <th>ደንበኛ</th>
           <th class="text-right">ጠቅላላ ዋጋ</th>
           <th class="text-right">የተከፈለ</th>
+          <th>የመዘገበው</th>
           <th class="text-center">ሁኔታ</th>
         </tr>
       </thead>
@@ -634,6 +640,7 @@ export function exportReportToPrint(type: ReportExportType, data: ReportExportDa
                   const line = s.sale_lines?.[0];
                   const itemName = line?.item_name_snapshot || 'Product Sale';
                   const qty = line ? `${line.quantity} ${line.unit_snapshot || 'pcs'}` : '—';
+                  const rec = Array.isArray(s.profiles) ? s.profiles[0]?.display_name : s.profiles?.display_name;
                   return `
             <tr>
               <td class="font-mono">${formatEthiopicDate(s.sale_date, { withYearSuffix: true })}</td>
@@ -643,18 +650,19 @@ export function exportReportToPrint(type: ReportExportType, data: ReportExportDa
               <td>${s.customer_name || 'በቀጥታ ሽያጭ'}</td>
               <td class="text-right font-mono font-bold">${Number(s.total_amount).toFixed(2)}</td>
               <td class="text-right font-mono">${Number(s.paid_amount).toFixed(2)}</td>
+              <td>${rec || '—'}</td>
               <td class="text-center">ተከፍሏል</td>
             </tr>
           `;
                 })
                 .join('')
-            : '<tr><td colspan="8" class="text-center">በዚህ ክፍለ-ጊዜ የተመዘገበ ሽያጭ የለም</td></tr>'
+            : '<tr><td colspan="9" class="text-center">በዚህ ክፍለ-ጊዜ የተመዘገበ ሽያጭ የለም</td></tr>'
         }
         <tr style="background:#f1f5f9;font-weight:bold;">
           <td colspan="5">ጠቅላላ የሽያጭ ድምር</td>
           <td class="text-right font-mono">${formatMoney(totalSales)}</td>
           <td class="text-right font-mono">${formatMoney(paidSales)}</td>
-          <td></td>
+          <td colspan="2"></td>
         </tr>
       </tbody>
     </table>

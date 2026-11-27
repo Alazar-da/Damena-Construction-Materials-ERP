@@ -22,6 +22,7 @@ import {
   LogOut,
   UserRound,
   Bell,
+  Receipt,
 } from 'lucide-react';
 import { logout } from '@/app/login/actions';
 import { HeaderSlotProvider, useHeaderSlot } from '@/components/header-slot-context';
@@ -41,6 +42,7 @@ const navItems: NavItem[] = [
   { href: '/app/sales', label: t.sales.title, mobileLabel: t.nav.salesMobile, icon: ShoppingCart },
   { href: '/app/breakage', label: t.breakage?.title || 'የተሰበሩ እቃዎች', mobileLabel: t.nav.breakageMobile || 'ስብርባሪ', icon: PackageMinus },
   { href: '/app/payroll', label: t.payroll.title, mobileLabel: t.nav.payrollMobile, icon: WalletCards },
+  { href: '/app/expenses', label: 'ወጪ (ግዢ)', mobileLabel: 'ወጪ', icon: Receipt },
 ];
 
 interface AppShellProps {

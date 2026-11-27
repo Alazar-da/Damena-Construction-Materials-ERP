@@ -84,19 +84,21 @@ export default function ExpensesPage({
   description,
   searchParams,
   tableMissing = false,
+  hideCementPreset = false,
 }: {
   expenses: ExpenseRecord[];
-  returnTo: '/manager/expenses' | '/owner/expenses';
+  returnTo: '/app/expenses' | '/manager/expenses' | '/owner/expenses';
   title: string;
   description: string;
   searchParams: { error?: string; success?: string };
   tableMissing?: boolean;
+  hideCementPreset?: boolean;
 }) {
   const todayEth = getTodayEthiopic();
 
   // Create Form State - 2 Sections only: 'production_materials' & 'workshop_services'
   const [category, setCategory] = useState<'production_materials' | 'workshop_services'>('production_materials');
-  const [selectedPreset, setSelectedPreset] = useState<string>('ሲሚንቶ');
+  const [selectedPreset, setSelectedPreset] = useState<string>(hideCementPreset ? 'አሸዋ' : 'ሲሚንቶ');
   const [customItemName, setCustomItemName] = useState<string>('');
   const [cementQuantity, setCementQuantity] = useState<string>('');
   const [amount, setAmount] = useState<string>('');
@@ -201,7 +203,9 @@ export default function ExpensesPage({
 
   const totalPages = Math.max(1, Math.ceil(filteredExpenses.length / PAGE_SIZE));
   const pagedExpenses = filteredExpenses.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const activePresets = CATEGORY_META[category].presets;
+  const activePresets = hideCementPreset
+    ? CATEGORY_META[category].presets.filter((p) => p !== 'ሲሚንቶ')
+    : CATEGORY_META[category].presets;
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
@@ -585,6 +589,16 @@ export default function ExpensesPage({
                         </div>
                         <p className="text-[11px] font-mono font-semibold text-slate-400">
                           {formatEthiopicDate(exp.expense_date, { withYearSuffix: true })}
+                          {exp.profiles && (
+                            <span className="font-sans font-medium text-slate-500">
+                              {' '}
+                              · በ
+                              {Array.isArray(exp.profiles)
+                                ? exp.profiles[0]?.display_name || '—'
+                                : exp.profiles.display_name || '—'}{' '}
+                              ተመዝግቧል
+                            </span>
+                          )}
                         </p>
                       </div>
 

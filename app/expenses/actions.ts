@@ -9,7 +9,9 @@ const allowedCategories = new Set(['production_materials', 'workshop_services', 
 
 const returnPath = (formData: FormData) => {
   const raw = String(formData.get('return_to') || '/manager/expenses');
-  return raw === '/owner/expenses' ? '/owner/expenses' : '/manager/expenses';
+  if (raw === '/owner/expenses') return '/owner/expenses';
+  if (raw === '/app/expenses') return '/app/expenses';
+  return '/manager/expenses';
 };
 
 const message = (path: string, key: 'error' | 'success', value: string) =>
@@ -36,7 +38,7 @@ async function getAuthorizedUser() {
     .single();
 
   if (!profile?.is_active) return null;
-  if (profile.role !== 'manager' && profile.role !== 'super_admin') {
+  if (profile.role !== 'manager' && profile.role !== 'super_admin' && profile.role !== 'admin') {
     return null;
   }
 
@@ -47,15 +49,19 @@ export async function addExpense(formData: FormData) {
   const path = returnPath(formData);
   const auth = await getAuthorizedUser();
   if (!auth) {
-    redirect(message(path, 'error', 'ይህንን እርምጃ ለመፈጸም ፈቃድ የለዎትም። ስራ አስኪያጅ ወይም ዋና ባለቤት ብቻ ወጪ መመዝገብ ይችላሉ።'));
+    redirect(message(path, 'error', 'ይህንን እርምጃ ለመፈጸም ፈቃድ የለዎትም።'));
   }
 
-  const { user, client } = auth;
+  const { user, role, client } = auth;
   const category = String(formData.get('category') || '').trim();
   const itemName = String(formData.get('item_name') || '').trim();
   const amount = Number(formData.get('amount'));
   const expenseDate = String(formData.get('expense_date') || '').trim();
   const notes = String(formData.get('notes') || '').trim();
+
+  if (role === 'admin' && (itemName.includes('ሲሚንቶ') || itemName.toLowerCase().includes('cement'))) {
+    redirect(message(path, 'error', 'የሲሚንቶ ግዢ የሚመዘገበው በስራ አስኪያጅ ወይም በዋና ባለቤት ብቻ ነው።'));
+  }
 
   if (!allowedCategories.has(category)) {
     redirect(message(path, 'error', 'እባክዎ ትክክለኛ የወጪ ምድብ ይምረጡ።'));
@@ -113,6 +119,7 @@ export async function addExpense(formData: FormData) {
     }
   }
 
+  revalidatePath('/app/expenses');
   revalidatePath('/manager/expenses');
   revalidatePath('/owner/expenses');
   redirect(message(path, 'success', 'ወጪው በተሳካ ሁኔታ ተመዝግቧል።'));
